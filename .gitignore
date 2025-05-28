@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-JTAG/db/Jtag.db_info
+
 JTAG/db/Jtag.quiproj.21568.rdr.flock
-JTAG/Jtag.qpf
-JTAG/Jtag.qsf
+
+
