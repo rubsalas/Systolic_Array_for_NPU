@@ -1,13 +1,12 @@
 // ===============================================================
-//  NPU.sv  (versión corregida)
+//  NPU.sv
 // ===============================================================
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
 module NPU #(
     parameter int K      = 3,
-    // Si quieres que el usuario pueda *sobrescribir* los anchos,
-    // usa los valores por defecto del paquete, NO una auto-referencia.
+
     parameter int DATA_W = pkg_systolic::DATA_W,
     parameter int ACC_W  = pkg_systolic::ACC_W
 )(
