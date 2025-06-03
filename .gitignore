@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-
+*.flock
 JTAG/db/Jtag.quiproj.21568.rdr.flock
 
 

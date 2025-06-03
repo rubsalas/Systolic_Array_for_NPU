@@ -2,7 +2,12 @@
 	"partitions" : [
 		{
 			"name" : "Top",
-			"pins" : []
+			"pins" : [
+				{
+					"name" : "tdo",
+					"strict" : false
+				}
+			]
 		}
 	]
 }

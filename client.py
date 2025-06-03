@@ -3,7 +3,7 @@ import socket
 def send_jtag_data(value_hex: str, host='localhost', port=5555):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
-        s.sendall(f"SEND {value_hex}\n".encode())
+        s.sendall(f"SEND {value_hex}\\n".encode())
         data = s.recv(1024).decode()
         print("Respuesta del servidor:", data.strip())
 

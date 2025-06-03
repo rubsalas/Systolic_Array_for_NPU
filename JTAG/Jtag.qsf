@@ -56,8 +56,16 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name TCL_SCRIPT_FILE ../server.tcl
 set_global_assignment -name QSYS_FILE jtag.qsys
 set_global_assignment -name QIP_FILE jtag/synthesis/jtag.qip
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/Jtag.sv
+set_location_assignment PIN_V18 -to O_led[2]
+set_location_assignment PIN_AB12 -to i_switch[0]
+set_location_assignment PIN_AC12 -to i_switch[1]
+set_location_assignment PIN_AF9 -to i_switch[2]
+set_location_assignment PIN_AF10 -to i_switch[3]
+set_location_assignment PIN_V16 -to O_led[0]
+set_location_assignment PIN_V17 -to O_led[1]
+set_location_assignment PIN_W16 -to O_led[3]
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
