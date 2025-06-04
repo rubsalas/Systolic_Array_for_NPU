@@ -10,68 +10,75 @@ import pkg_systolic::*;         // Trae DATA_W, ACC_W, s16_t, s32_t
 // -----------------------------------------------------------------------------
 module tb_multiplier;
 
-  // ---------------------------------------------------------------------------
-  // Parámetros
-  // ---------------------------------------------------------------------------
-  localparam int N_TESTS = 250;   // número de vectores que inyectaremos
+	// ---------------------------------------------------------------------------
+	// Parámetros
+	// ---------------------------------------------------------------------------
+	localparam int N_TESTS = 250;   // número de vectores que inyectaremos
 
-  int   err_cnt = 0;              // contador de mismatches encontrados
-  int   seed    = 42;             // semilla para reproducibilidad
+	int   err_cnt = 0;              // contador de mismatches encontrados
+	int   seed    = 42;             // semilla para reproducibilidad
 
-  // ---------------------------------------------------------------------------
-  // Señales que conectan con el UUT
-  // ---------------------------------------------------------------------------
-  s16_t a_in, b_in;               // operandos de 16 bits con signo
-  s32_t p_out;                    // producto de 32 bits
-  s32_t exp_val;                  // “golden” reference para comparación
+	// ---------------------------------------------------------------------------
+	// Señales que conectan con el UUT
+	// ---------------------------------------------------------------------------
+	s16_t a_in, b_in;               // operandos de 16 bits con signo
+	s32_t p_out;                    // producto de 32 bits
+	s32_t exp_val;                  // “golden” reference para comparación
 
-  // ---------------------------------------------------------------------------
-  // Instancia del Dispositivo Bajo Prueba (UUT)
-  // ---------------------------------------------------------------------------
-  multiplier_comb uut (
-    .a_in (a_in),
-    .b_in (b_in),
-    .p_out(p_out)
-  );
+	// ---------------------------------------------------------------------------
+	// Instancia del Dispositivo Bajo Prueba (UUT)
+	// ---------------------------------------------------------------------------
+	multiplier uut (
+		.a_in (a_in),
+		.b_in (b_in),
+		.p_out(p_out)
+	);
 
-  // ---------------------------------------------------------------------------
-  // Bloque inicial: genera estímulos y chequea resultados
-  // No hay reloj porque el DUT es 100 % combinacional
-  // ---------------------------------------------------------------------------
-  initial begin
-    // Fija la semilla UNA vez.  $urandom_range usará esa secuencia.
-    void'($urandom(seed));
+	// ---------------------------------------------------------------------------
+	// Bloque inicial: genera estímulos y comprueba resultados
+	//  ▸ El DUT (multiplier) es combinacional, así que no necesitamos reloj.
+	// ---------------------------------------------------------------------------
+	initial begin
+	//-----------------------------------------------------------------
+	// 1) Sembrar el generador de números aleatorios
+	//    Quartus/ModelSim no acepta «void'(…)», así que llamamos
+	//    $urandom(seed) a secas y desechamos el valor que devuelve.
+	//-----------------------------------------------------------------
+	$urandom(seed);          // <—  línea corregida (sin void' cast)
 
-    // Bucle principal de estímulo
-    for (int i = 0; i < N_TESTS; i++) begin
+	//-----------------------------------------------------------------
+	// 2) Bucle principal con N_TESTS vectores aleatorios
+	//-----------------------------------------------------------------
+	for (int i = 0; i < N_TESTS; i++) begin
+		// ► Operand-A aleatorio con signo de 16 bits
+		a_in = $signed($urandom_range((2**(DATA_W-1))-1,
+									-(2**(DATA_W-1))));
+		// ► Operand-B aleatorio con signo de 16 bits
+		b_in = $signed($urandom_range((2**(DATA_W-1))-1,
+									-(2**(DATA_W-1))));
 
-      // Se genera un entero aleatorio con signo de 16 bits para cada operando.
-      //  $urandom_range(max, min) devuelve uint;   $signed(...) -> sint.
-      a_in = $signed($urandom_range((2**(DATA_W-1))-1, -(2**(DATA_W-1))));
-      b_in = $signed($urandom_range((2**(DATA_W-1))-1, -(2**(DATA_W-1))));
+		#1;                     // δ-cycle: tiempo para que p_out se resuelva
 
-      #1;                       // permite que p_out se estabilice
+		exp_val = a_in * b_in;  // calcula referencia dorada
 
-      exp_val = a_in * b_in;    // producto esperado calculado por el TB
+		// ► Comparación estricta (!== detecta X/Z)
+		if (p_out !== exp_val) begin
+		$error("[tb_multiplier] MISMATCH %0d * %0d → got %0d, exp %0d",
+				a_in, b_in, p_out, exp_val);
+		err_cnt++;
+		end
+	end
 
-      // ► Comparación bit-a-bit (=== / !== evita «X/Z» ambiguos)
-      if (p_out !== exp_val) begin
-        $error("[tb_multiplier] MISMATCH  %0d * %0d  -> got %0d, exp %0d",
-               a_in, b_in, p_out, exp_val);
-        err_cnt++;
-      end
-    end
+	//-----------------------------------------------------------------
+	// 3) Informe final
+	//-----------------------------------------------------------------
+	if (err_cnt == 0)
+		$display("[tb_multiplier] TODOS los %0d vectores PASARON", N_TESTS);
+	else
+		$display("[tb_multiplier] %0d errores en %0d vectores",
+				err_cnt, N_TESTS);
 
-    // -------------------------------------------------------------------------
-    // Informe final
-    // -------------------------------------------------------------------------
-    if (err_cnt == 0)
-      $display("[tb_multiplier] TODOS los %0d vectores PASARON", N_TESTS);
-    else
-      $display("[tb_multiplier] %0d errores sobre %0d vectores",
-               err_cnt, N_TESTS);
-
-    $finish;
-  end
+	$finish;
+	end
 
 endmodule
