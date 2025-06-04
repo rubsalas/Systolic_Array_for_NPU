@@ -1,0 +1,3 @@
+/home/morqui/projects/p2_arqui2/Systolic_Array_for_NPU/simulator/build/CMakeFiles/programa.dir
+/home/morqui/projects/p2_arqui2/Systolic_Array_for_NPU/simulator/build/CMakeFiles/edit_cache.dir
+/home/morqui/projects/p2_arqui2/Systolic_Array_for_NPU/simulator/build/CMakeFiles/rebuild_cache.dir
