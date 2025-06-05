@@ -1,7 +1,7 @@
 /*
 Test bench for Accumulator module
 Date: 31/08/24
-NY Approved
+Approved
 */
 import pkg_systolic::*;
 
