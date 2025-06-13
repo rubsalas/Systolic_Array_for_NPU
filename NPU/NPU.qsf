@@ -39,7 +39,7 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEMA5F31C6
-set_global_assignment -name TOP_LEVEL_ENTITY pe
+set_global_assignment -name TOP_LEVEL_ENTITY NPU
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 22.1STD.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "01:36:00  MAY 28, 2025"
 set_global_assignment -name LAST_QUARTUS_VERSION "22.1std.0 Lite Edition"
@@ -61,7 +61,7 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/multiplier.sv
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_multiplier.sv
 set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
-set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb_pe -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb_matrix_feeder -section_id eda_simulation
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_multiplier -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_multiplier
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_multiplier -section_id tb_multiplier
@@ -70,22 +70,33 @@ set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_ac
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_accumulator -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_accumulator
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_accumulator -section_id tb_accumulator
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/accumulator_tb_og.sv
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/relu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_relu.sv
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_relu -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_relu
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_relu -section_id tb_relu
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/pe.sv
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_pe.sv
-set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_multiplier.sv -section_id tb_multiplier
-set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_accumulator.sv -section_id tb_accumulator
-set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_relu.sv -section_id tb_relu
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_pe -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_pe
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_pe -section_id tb_pe
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/systolic_array.sv
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_systolic_array.sv
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_systolic_array -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_systolic_array
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_systolic_array -section_id tb_systolic_array
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/matrix_feeder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/tb/tb_matrix_feeder.sv
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_multiplier.sv -section_id tb_multiplier
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_accumulator.sv -section_id tb_accumulator
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_relu.sv -section_id tb_relu
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_pe.sv -section_id tb_pe
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_systolic_array.sv -section_id tb_systolic_array
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_matrix_feeder -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_matrix_feeder
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_matrix_feeder -section_id tb_matrix_feeder
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/tb/tb_matrix_feeder.sv -section_id tb_matrix_feeder
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

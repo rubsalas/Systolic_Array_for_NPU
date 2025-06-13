@@ -66,7 +66,7 @@ module pe #(
     //--------------------------------------------------------------------------
     s32_t prod;
 
-    multiplier u_mul (
+    multiplier mul (
         .a_in  (a_reg),
         .b_in  (b_reg),
         .p_out (prod)
@@ -78,7 +78,7 @@ module pe #(
     s32_t acc_val;
     logic last_prod;
 
-    accumulator #(.K(K)) u_acc (
+    accumulator #(.K(K)) acc (
         .clk       (clk),
         .rst       (rst),
         .valid_in  (v_reg),     // ya alineado un ciclo
@@ -90,7 +90,7 @@ module pe #(
     //--------------------------------------------------------------------------
     // 4. ReLU combinacional
     //--------------------------------------------------------------------------
-    relu u_relu (
+    relu rlu (
         .x_in  (acc_val),
         .v_in  (last_prod),
         .y_out (c_out),

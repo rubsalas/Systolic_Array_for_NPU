@@ -13,7 +13,7 @@ module tb_pe;
     // Parámetros
     localparam int K        = 4;    // productos por celda
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
-    localparam int RANGE = 10; // rango de valores por usar
+    localparam int RANGE    = 10;   // rango de valores por usar
 
     logic clk;
     logic rst;
@@ -30,7 +30,7 @@ module tb_pe;
     s32_t  c_out;
     logic  c_valid;
 
-    /* accumulator unit under testing */
+    /* pe unit under testing */
     pe #(.K(K)) uut (
         .clk        (clk),
         .rst        (rst),
@@ -52,7 +52,7 @@ module tb_pe;
 
     // Initialize inputs
     initial begin
-		$display("accumulator module testbench:\n");
+		$display("pe module testbench:\n");
 
 		clk = 1'b0;
         rst = 1'b0;
@@ -74,7 +74,7 @@ module tb_pe;
             
     // Variables de referencia
     // s32_t exp_sum;
-    int   err_cnt = 0;
+    // int   err_cnt = 0;
     int   seed    = 29;
 
     // Sembrar el RNG una sola vez

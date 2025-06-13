@@ -80,3 +80,5 @@ incremental_db/
 db/
 _output_files/
 PLLJ_PLLSPE_INFO.txt
+NPU/hdl_files/systolic_array/systolic_array.sv
+NPU/hdl_files/systolic_array/tb/tb_systolic_array.sv

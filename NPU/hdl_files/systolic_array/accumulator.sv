@@ -63,7 +63,7 @@ module accumulator #(
 				k_cnt     <= '0;      // se prepara para la siguiente celda
 				res_ready <= 1'b1;    // marcaremos resultado en próximo ciclo
 			end else begin
-				k_cnt     <= k_cnt + 1;
+				k_cnt     <= k_cnt + 1'b1;
 			end
 		end
 	end
