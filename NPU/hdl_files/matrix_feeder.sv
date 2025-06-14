@@ -47,22 +47,22 @@ module matrix_feeder #(
             f_cycle <= f_cycle + 1'b1;
         end
         else begin
-            f_cycle <= '0;        // reset automático al caer valid_in
+            f_cycle <= '0;      // reset automático al caer valid_in
         end
     end
 
-    int unsigned fc;          // variable procedural (entero)
+    int unsigned fc;    // variable procedural (entero)
 
     always_comb begin
 
-        fc = int'(f_cycle);   // casteo explícito
+        fc = int'(f_cycle);     // casteo explícito
 
         if (0 <= fc && fc < K) begin
 
             for (int j = 0; j < fc && j < K; j = j + 1) begin : FEED_BELOW
-                a_col0[j] = a_mat[fc-j-1][j];
-                b_row0[j] = b_mat[j][fc-j-1];
-                valid_out[j] = 1'b1;
+                a_col0[j] = a_mat[j][fc-j-1];
+                b_row0[j] = b_mat[fc-j-1][j];
+                valid_out[j] = 1'b1 && valid_in;
             end
             for (int k = 0; k < K; k = k + 1) begin : FILL_BELOW
                 a_col0[fc+k] = 0;
@@ -74,9 +74,9 @@ module matrix_feeder #(
         else if (fc == K) begin
 
             for (int j = 0; j < fc && j < K; j = j + 1) begin : FEED_SAME
-                a_col0[j] = a_mat[fc-j-1][j];
-                b_row0[j] = b_mat[j][fc-j-1];
-                valid_out[j] = 1'b1;
+                a_col0[j] = a_mat[j][fc-j-1];
+                b_row0[j] = b_mat[fc-j-1][j];
+                valid_out[j] = 1'b1 && valid_in;
             end
 
         end
@@ -88,9 +88,9 @@ module matrix_feeder #(
                 valid_out[j] = 1'b0;
             end
             for (int k = 0; k < K; k = k + 1) begin : FEED_OVER
-                a_col0[fc-K+k] = a_mat[K-1-k][fc-K+k];
-                b_row0[fc-K+k] = b_mat[fc-K+k][K-1-k];
-                valid_out[fc-K+k] = 1'b1;
+                a_col0[fc-K+k] = a_mat[fc-K+k][K-1-k];
+                b_row0[fc-K+k] = b_mat[K-1-k][fc-K+k];
+                valid_out[fc-K+k] = 1'b1 && valid_in;
             end
 
         end

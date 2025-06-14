@@ -13,7 +13,7 @@ module NPU #(
     input  logic                      clk,
     input  logic                      rst,       // activo-bajo global
 
-    output logic                      z
+    output logic                      out
 );
 
     // Interfaz al UUT
@@ -24,7 +24,7 @@ module NPU #(
     // Bordes para systolic array
     s16_t   a_col0 [K-1:0];         // columna de A
     s16_t   b_row0 [K-1:0];         // fila de B
-    logic   data_validity [K-1:0];      // habilita stream
+    logic   data_validity [K-1:0];  // habilita stream
 
     matrix_feeder #(
         .K(K)
@@ -46,6 +46,17 @@ module NPU #(
     //----------------------------------------------------------------------
     // Instancia del systolic array
     //----------------------------------------------------------------------
-    
+    systolic_array #(
+        .M (M),
+        .K (K)
+    ) u_array (
+        .clk      (clk),
+        .rst      (rst),
+        .a_col0   (a_col0),
+        .b_row0   (b_row0),
+        .valid_in (data_validity),
+        .c_mat    (c_mat),
+        .c_valid  (c_valid)
+    );
 
 endmodule : NPU

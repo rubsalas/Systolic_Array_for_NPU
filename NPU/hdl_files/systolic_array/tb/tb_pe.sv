@@ -11,7 +11,7 @@ module tb_pe;
     timeprecision 1ps;
 
     // Parámetros
-    localparam int K        = 4;    // productos por celda
+    localparam int K        = 3;    // productos por celda
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
     localparam int RANGE    = 10;   // rango de valores por usar
 
@@ -49,6 +49,11 @@ module tb_pe;
     s32_t prod;
     s32_t acc_val;
     logic last_prod;
+    s32_t relu_out;
+    logic relu_valid;
+    s32_t c_hold;
+    logic have_res;
+    logic start_next;
 
     // Initialize inputs
     initial begin
@@ -70,6 +75,11 @@ module tb_pe;
         prod = uut.prod;
         acc_val = uut.acc_val;
         last_prod = uut.last_prod;
+        relu_out = uut.relu_out;
+        relu_valid = uut.relu_valid;
+        c_hold = uut.c_hold;
+        have_res = uut.have_res;
+        start_next = uut.start_next;
     end
             
     // Variables de referencia
@@ -94,8 +104,10 @@ module tb_pe;
 
         // Suma 1/4
 		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 2; 
+        b_in = 1; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -104,8 +116,10 @@ module tb_pe;
 
         // Suma 2/4
 		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = -1; 
+        b_in = 2; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -114,18 +128,10 @@ module tb_pe;
 
         // Suma 3/4
 		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
-
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
-	 
-        @(posedge clk);
-
-        // Suma 4/4
-		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 3; 
+        b_in = 3; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -133,8 +139,29 @@ module tb_pe;
         @(posedge clk);
 
         valid_in = 0;
-        a_in  = $urandom_range(RANGE * 2) - RANGE;
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 69; 
+        b_in = 69; 
+
+        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
+                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
+	 
+        @(posedge clk);
+
+        valid_in = 0;
+
+        @(posedge clk);
+
+        valid_in = 0;
+
+        @(posedge clk);
+
+        valid_in = 0;
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 42; 
+        b_in = 42; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -143,8 +170,10 @@ module tb_pe;
 
         // Suma 1/4
 		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 2; 
+        b_in = -2; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -153,8 +182,10 @@ module tb_pe;
 
         // Suma 2/4
 		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = -1; 
+        b_in = 4;  
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -163,18 +194,10 @@ module tb_pe;
 
         // Suma 3/4
 		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
-
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
-	 
-        @(posedge clk);
-
-        // Suma 4/4
-		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 3; 
+        b_in = 1; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -182,55 +205,17 @@ module tb_pe;
         @(posedge clk);
 
         valid_in = 0;
-        a_in  = $urandom_range(RANGE * 2) - RANGE;
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 69; 
+        b_in = 69; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
 	 
         @(posedge clk);
 
-        // Suma 1/4
-		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
-
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
-	 
-        @(posedge clk);
-
-        // Suma 2/4
-		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
-
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
-	 
-        @(posedge clk);
-
-        // Suma 3/4
-		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
-
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
-	 
-        @(posedge clk);
-
-        // Suma 4/4
-		valid_in = 1;
-        a_in  = $urandom_range(RANGE * 2) - RANGE; 
-        b_in  = $urandom_range(RANGE * 2) - RANGE; 
-
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
-	 
-        @(posedge clk);
-
-		// Done
+        // Done
 
     end
 

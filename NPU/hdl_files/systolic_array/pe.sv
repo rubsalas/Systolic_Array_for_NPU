@@ -90,11 +90,45 @@ module pe #(
     //--------------------------------------------------------------------------
     // 4. ReLU combinacional
     //--------------------------------------------------------------------------
-    relu rlu (
-        .x_in  (acc_val),
-        .v_in  (last_prod),
-        .y_out (c_out),
-        .v_out (c_valid)
+    s32_t relu_out;
+    logic relu_valid;
+
+    relu u_relu (
+        .x_in  (acc_val),       // dato del acumulador
+        .v_in  (last_prod),     // pulso 1-clk → relu_valid
+        .y_out (relu_out),
+        .v_out (relu_valid)
     );
+
+    // -------------------------------------------------------------------------
+    // 5. Registro “hold” – mantiene el resultado final hasta el START siguiente
+    // -------------------------------------------------------------------------
+    s32_t c_hold;
+    logic have_res;
+
+    // Detectar flanco 0→1 de valid_in (primer ciclo del nuevo bloque)
+    logic start_next;
+    assign start_next = valid_in & ~v_reg;   // v_reg = valid_in retardado 1 ciclo
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            c_hold   <= '0;
+            have_res <= 1'b0;
+        end
+        // Captura justo cuando ReLU entrega su dato válido
+        else if (relu_valid) begin
+            c_hold   <= relu_out;
+            have_res <= 1'b1;
+        end
+        // Limpia al comenzar el siguiente bloque (valid vuelve a 1)
+        else if (start_next) begin
+            c_hold   <= '0;
+            have_res <= 1'b0;
+        end
+    end
+
+    // Salidas estables
+    assign c_out   = c_hold;      // permanece fijo entre bloques
+    assign c_valid = have_res;    // ‘1’ cuando c_out es válido
 
 endmodule
