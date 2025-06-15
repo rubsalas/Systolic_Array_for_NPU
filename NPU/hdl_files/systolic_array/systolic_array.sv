@@ -23,17 +23,17 @@ module systolic_array #(
     parameter int K = 4                // productos que acumula cada PE
 )(
     input  logic                       clk,
-    input  logic                       rst,                  // activo-alto
+    input  logic                       rst,                     // activo-alto
 
     // Bordes de entrada (1 palabra por ciclo)
-    input  s16_t                       a_col0 [0:M-1],           // columna de A
-    input  s16_t                       b_row0 [0:M-1],           // fila de B
-    input  logic                       valid_in [0:M-1],         // habilita stream
+    input  s16_t                       a_col0 [0:M-1],          // columna de A
+    input  s16_t                       b_row0 [0:M-1],          // fila de B
+    input  logic                       valid_in [0:M-1],        // habilita stream
     /* valid_in se pone a 1 exactamente K ciclos por cada banda vertical se quiera procesar. */
 
     // Resultados
-    output s32_t                       c_mat [0:M-1][0:M-1],         // matriz C
-    output logic                       c_valid               // pulso banda
+    output s32_t                       c_mat [0:M-1][0:M-1],    // matriz C
+    output logic                       c_valid                  // pulso banda
 );
     //--------------------------------------------------------------------------
     // 1. Señales internas: buses “shift” para A, B y validez
