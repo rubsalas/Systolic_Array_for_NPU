@@ -61,7 +61,7 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/multiplier.sv
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_multiplier.sv
 set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
-set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb_npu -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb_mram -section_id eda_simulation
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_multiplier -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_multiplier
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_multiplier -section_id tb_multiplier
@@ -100,6 +100,15 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/tb/tb_npu.sv
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_npu -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_npu
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_npu -section_id tb_npu
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/MRAM.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/tb/tb_mram.sv
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_mram -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_mram
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_mram -section_id tb_mram
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/memory/tb/tb_mram.sv -section_id tb_mram
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_multiplier.sv -section_id tb_multiplier
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_accumulator.sv -section_id tb_accumulator
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_relu.sv -section_id tb_relu
@@ -107,8 +116,5 @@ set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_p
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_systolic_array.sv -section_id tb_systolic_array
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/tb/tb_matrix_feeder.sv -section_id tb_matrix_feeder
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/tb/tb_control_unit.sv -section_id tb_control_unit
-set_global_assignment -name EDA_TEST_BENCH_NAME tb_npu -section_id eda_simulation
-set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_npu
-set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_npu -section_id tb_npu
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/tb/tb_npu.sv -section_id tb_npu
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
