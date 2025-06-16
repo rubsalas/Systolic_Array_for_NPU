@@ -1,7 +1,7 @@
 /*
 Test bench for Control Unit module
 Date: 14/06/25
-NY Approved
+Approved
 */
 import pkg_systolic::*;
 

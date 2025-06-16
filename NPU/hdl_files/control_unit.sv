@@ -30,7 +30,7 @@ module control_unit #(
     typedef enum logic [1:0] {IDLE, STREAM, DRAIN} st_t;
     st_t st, nxt;
 
-    localparam int CW = (K <= 1) ? 1 : $clog2(K);
+    localparam int CW = (K <= 1) ? 1 : $clog2(K*2);
     logic [CW-1:0] k_cnt;      // cuenta 0 … K-1
 
     //--------------------------------------------------------------------------
@@ -50,7 +50,7 @@ module control_unit #(
         nxt = st;
         unique case (st)
             IDLE   : if (start)              nxt = STREAM;
-            STREAM : if (k_cnt == K-1)       nxt = DRAIN;
+            STREAM : if (k_cnt == (K*2)-1)   nxt = DRAIN;
             DRAIN  : if (matrix_done)        nxt = IDLE;   // pulso final
         endcase
     end

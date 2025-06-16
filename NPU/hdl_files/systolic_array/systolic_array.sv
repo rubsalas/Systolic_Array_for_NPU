@@ -104,7 +104,15 @@ module systolic_array #(
         end
     endgenerate
 
+    logic [0:M-1] valid_vec;
+
+    always_comb begin
+        for (int i = 0; i < M; i++) begin
+            valid_vec[i] = valid_in[i];
+        end
+    end
+
     // 3. El pulso de banda lista es el AND de esos M bits
-    assign c_valid = &c_valid_band;   // reducción AND packed → 1-clk pulse
+    assign c_valid = &c_valid_band & ~|valid_vec;   // reducción AND packed → 1-clk pulse
 
 endmodule
