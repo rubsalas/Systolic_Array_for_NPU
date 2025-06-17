@@ -9,7 +9,6 @@
 // - Señales `readyX` indican cuándo finaliza la operación;
 //   `stallX` es el complementario para back-pressure.
 //==============================================================================
-
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
