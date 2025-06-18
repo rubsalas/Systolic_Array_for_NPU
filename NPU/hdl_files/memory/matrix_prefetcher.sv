@@ -12,30 +12,33 @@
 //------------------------------------------------------------------------------
 
 `timescale 1ns/1ps
-import pkg_systolic::*;  // Define s16_t
+import pkg_systolic::*;
 
 module matrix_prefetcher #(
     parameter int K = 4   // dimensión de las matrices (K×K)
 )(
-    input  logic        clk,               // reloj síncrono
-    input  logic        rst,               // reset síncrono activo-alto
+    input  logic        clk,                // reloj síncrono
+    input  logic        rst,                // reset síncrono activo-alto
 
-    // señales de control
-    input  logic        matrices_ready,    // 1 = A y B presentes en MRAM
-    input  logic        prefetch_start,             // pulso 1-ciclo para lanzar prefetch
+    // Control signals
+    input  logic        matrices_ready,     // 1 = A y B presentes en MRAM (Matrix Load)
+    input  logic        prefetch_start,     // pulso 1-ciclo (Control Unit) para lanzar prefetch
 
     // Interfaz MRAM 16-bit (solo lectura)
-    input  s16_t        dout16,            // dato leído de MRAM
-    input  logic        ready16,           // MRAM listo (1 ciclo)
-    input  logic        stall16,           // MRAM ocupado
-    output logic        re16,              // habilita lectura unitaria
-    output logic        mat_sel,           // 0→leer A, 1→leer B
+    input  s16_t        dout16,             // dato leído de MRAM
+    input  logic        ready16,            // MRAM listo (1 ciclo)
+    input  logic        stall16,            // MRAM ocupado
+
+    output logic        re16,               // habilita lectura unitaria
+    output logic        mat_sel,            // 0→leer A, 1→leer B
     output logic [$clog2(K*K)-1:0] addr16,  // dirección fila-major 0…K*K-1
 
     // Salidas al NPU
     output s16_t        a_mat [0:K-1][0:K-1],
     output s16_t        b_mat [0:K-1][0:K-1],
-    output logic        ready_to_npu       // pulso 1-ciclo: datos listos
+
+    // Salida de control
+    output logic        ready_to_npu        // pulso 1-ciclo: datos listos
 );
 
     // cálculo de constantes

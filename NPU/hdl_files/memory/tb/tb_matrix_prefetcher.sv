@@ -27,11 +27,11 @@ module tb_matrix_prefetcher;
     logic rst;
 	
     // Interfaz al UUT
-	logic we16;
+	// logic we16;
     logic re16;
     logic mat_sel;
     logic [$clog2(K*K)-1:0] addr16;
-    s16_t din16;
+    // s16_t din16;
 
     s16_t dout16; 
     logic ready16;
@@ -46,7 +46,7 @@ module tb_matrix_prefetcher;
     // logic stall32;
 
     //--------------------------------------------------------------------------
-    // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
+    // Instancia de la MRAM: almacena A, B (16 bits)
     //--------------------------------------------------------------------------
     MRAM #(
         .K (K)
@@ -54,11 +54,11 @@ module tb_matrix_prefetcher;
         .clk     (clk),
         .rst     (rst),
         // Puerto A/B de 16 bits
-        .we16    (we16),  // 1→din16→mem[mat_sel?B:A][addr16]
+        // .we16    (we16),  // 1→din16→mem[mat_sel?B:A][addr16]
         .re16    (re16),  // 1→mem[mat_sel?B:A][addr16]→dout16
         .mat_sel (mat_sel),  // 0=A, 1=B
         .addr16  (addr16),   // índice fila-major 0…K*K–1
-        .din16   (din16),  // dato de entrada
+        // .din16   (din16),  // dato de entrada
 
         .dout16  (dout16),  // dato de salida
         .ready16 (ready16),  // 1-clk cuando la operación acaba
@@ -74,19 +74,20 @@ module tb_matrix_prefetcher;
     );
 
     // matrix prefetcher wires 
-    logic matrices_ready;       // señal que indica a MRAM llenada  // [y] from MtxPref to [n]
+    logic matrices_ready;       // señal que indica a MRAM llenada
     logic prefetch_start;        
-    s16_t a_mat [0:K-1][0:K-1]; // matriz A                         // [y] from MtxPref to NPU [y]
-    s16_t b_mat [0:K-1][0:K-1]; // matriz B                         // [y] from MtxPref to NPU [y]
-    logic ready_to_npu;            // pulso 1-ciclo: matrices cargadas // [y] from MtxPref to NPU [y]
+    s16_t a_mat [0:K-1][0:K-1]; // matriz A
+    s16_t b_mat [0:K-1][0:K-1]; // matriz B
+    logic ready_to_npu;         // pulso 1-ciclo: matrices cargadas
 
     matrix_prefetcher #(
         .K(K)
     ) uut (
         .clk              (clk),
         .rst              (rst),
+        // Control signals
         .matrices_ready   (matrices_ready), // Tiene que venir del modulo que carga las matrices a MRAM
-        .prefetch_start   (prefetch_start),
+        .prefetch_start   (prefetch_start), // Vendrá de un control unit
         // Conexión MRAM 16-bit
         .dout16           (dout16),     //ok
         .ready16          (ready16),    //ok
@@ -98,6 +99,7 @@ module tb_matrix_prefetcher;
         // Salida a NPU
         .a_mat            (a_mat),
         .b_mat            (b_mat),
+        // Salida de control
         .ready_to_npu     (ready_to_npu)
     );
 
@@ -113,19 +115,17 @@ module tb_matrix_prefetcher;
 
     // Initialize inputs
     initial begin
-		$display("\nMRAM module testbench:\n");
+		$display("\nMatrix Prefetcher module testbench:\n");
 
 		clk = 1'b1;
         rst = 1'b0;
 
-		we16 = 1'b0;
+        matrices_ready = 1'b0;
+        prefetch_start = 1'b0;
+
 		re16 = 1'b0;
 		mat_sel = 1'b0;
 		addr16 = 0;
-		din16 = 0;
-
-        matrices_ready = 1'b0;
-        prefetch_start = 1'b0;
 
         mram.memA = '{
             2,  -1,  0,  6,
@@ -139,7 +139,6 @@ module tb_matrix_prefetcher;
             8,  -9,  0,  9,
             1,  3,  -5,  2
         };
-
     end
 
     // Clock
@@ -181,6 +180,7 @@ module tb_matrix_prefetcher;
         
         // --- espera a que el NPU active el done ---
         wait(ready_to_npu);
+
 
         @(posedge clk);
 

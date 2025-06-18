@@ -9,7 +9,7 @@ import pkg_systolic::*;
 
 module system_top #(
     parameter int M = 4,
-    parameter int K = 4     // dimensión de matriz
+    parameter int K = 4     // dimensión de matriz (K×K)
 )(
     input  logic clk,
     input  logic rst,
@@ -37,13 +37,13 @@ module system_top #(
     logic ready16;          // pulso 1-clk cuando termina we16 o re16   // [y] from MRAM to MtxPref [y]
     logic stall16;          // 1 mientras ready16=0 (back-pressure)     // [y] from MRAM to MtxPref [y]
     // Puertos de 32 bits
-    logic we32;             // habilita escritura de C                  // [y] from MRAM to [n]
+    logic we32;             // habilita escritura de C                  // [y] from MRAM to MtxComt [y]
     logic re32;             // habilita lectura de C                    // [y] from MRAM to [n]
-    logic [$clog2(K*K)-1:0] addr32; // dirección 0…K*K–1 para C         // [y] from MRAM to [n]
-    s32_t din32;            // dato de 32 bits a escribir en C          // [y] from MRAM to [n]
+    logic [$clog2(K*K)-1:0] addr32; // dirección 0…K*K–1 para C         // [y] from MRAM to MtxComt [y]
+    s32_t din32;            // dato de 32 bits a escribir en C          // [y] from MRAM to MtxComt [y]
     s32_t dout32;           // dato leído de C                          // [y] from MRAM to [n]
-    logic ready32;          // pulso 1-clk cuando termina we32 o re32   // [y] from MRAM to [n]
-    logic stall32;          // 1 mientras ready32=0                     // [y] from MRAM to [n]
+    logic ready32;          // pulso 1-clk cuando termina we32 o re32   // [y] from MRAM to MtxComt [y]
+    logic stall32;          // 1 mientras ready32=0                     // [y] from MRAM to MtxComt [y]
 
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
@@ -76,38 +76,44 @@ module system_top #(
 
     
     // matrix prefetcher wires 
-    logic matrices_loaded;      // señal que indica a MRAM llenada  // [y] from MtxPref to [n]
+    logic matrices_loaded;      // señal que indica que MRAM ha sido llenada  // [y] from MtxPref to [n]
+    /* Este vendrá de un control unit luego de revisar que la memoria pueda ser leida */
     logic prefetch_start;       // indica que inicie el prefetch    // [y] from MtxPref to [n]
     s16_t a_mat [0:K-1][0:K-1]; // matriz A                         // [y] from MtxPref to NPU [y]
     s16_t b_mat [0:K-1][0:K-1]; // matriz B                         // [y] from MtxPref to NPU [y]
     logic npu_start;            // pulso 1-ciclo: matrices cargadas // [y] from MtxPref to NPU [y]
 
+    //----------------------------------------------------------------------
+    // Instancia Matrix Prefetcher
+    //----------------------------------------------------------------------
     matrix_prefetcher #(
         .K(K)
     ) prefetch (
-        .clk              (clk),
-        .rst              (rst),
-        .matrices_ready   (matrices_loaded), // Tiene que venir del modulo que carga las matrices a MRAM
-        .prefetch_start   (prefetch_start),
+        .clk            (clk),
+        .rst            (rst),
+        // Control signals
+        .matrices_ready (matrices_loaded), // Tiene que venir del modulo que carga las matrices a MRAM
+        .prefetch_start (prefetch_start),  // Vendrá de un control unit
         // Conexión MRAM 16-bit
-        .dout16           (dout16),     //ok
-        .ready16          (ready16),    //ok
-        .stall16          (stall16),    //ok
+        .dout16         (dout16),     //ok
+        .ready16        (ready16),    //ok
+        .stall16        (stall16),    //ok
 
-        .re16             (re16),       //ok
-        .mat_sel          (mat_sel),    //ok
-        .addr16           (addr16),     //ok
+        .re16           (re16),       //ok
+        .mat_sel        (mat_sel),    //ok
+        .addr16         (addr16),     //ok
         // Salida a NPU
-        .a_mat            (a_mat),
-        .b_mat            (b_mat),
-        .ready_to_npu     (npu_start)
+        .a_mat          (a_mat),
+        .b_mat          (b_mat),
+        // Salida de control
+        .ready_to_npu   (npu_start)
     );
 
 
     // NPU wires
     logic npu_busy;  // [y] from NPU to [n]
-    logic npu_done;  // [y] from NPU to [n]
-    s32_t c_mat [0:K-1][0:K-1]; // matriz resultante // [y] from NPU to [n]
+    logic npu_done;  // [y] from NPU to MtxComt [y]
+    s32_t c_mat [0:K-1][0:K-1]; // matriz C resultante // [y] from NPU to MtxComt [y]
 
     //----------------------------------------------------------------------
     // Instancia NPU
@@ -118,12 +124,41 @@ module system_top #(
     ) u_npu (
         .clk   (clk),
         .rst   (rst),
+        // Prefetcher
         .a_mat (a_mat),
         .b_mat (b_mat),
         .start (npu_start),
-        .busy  (npu_busy),
+
+        .busy  (npu_busy),  // Enviar a Control Unit (?)
         .done  (npu_done),
         .c_mat (c_mat)
+    );
+    /* Este vendrá de un control unit luego de revisar que la memoria pueda ser escrita */
+    logic commit_start;       // indica que inicie el commit    // [y] from MtxComt to [n]
+    logic ready_to_ram;       // señal que indica que se ha escrito en MRAM // [y] from MtxComt to [n]
+
+    //----------------------------------------------------------------------
+    // Instancia Matrix Commiter
+    //----------------------------------------------------------------------
+    matrix_committer #(
+        .K(K)
+    ) commiter (
+        .clk          (clk),
+        .rst          (rst),
+        // Control signals
+        .data_ready   (npu_done),       //ok
+        .commit_start (commit_start),   // Vendrá de un control unit
+        // Entradas desde NPU
+        .c_mat        (c_mat),          //ok
+        // Conexión MRAM 32-bit
+        .ready32      (ready32),        //ok
+        .stall32      (stall32),        //ok
+
+        .we32         (we32),           //ok
+        .addr32       (addr32),         //ok
+        .din32        (din32),          //ok
+        // Salida de control
+        .ready_to_ram (ready_to_ram)    // Tiene que ir al modulo que leerá la matriz resultante del MRAM
     );
 
 
