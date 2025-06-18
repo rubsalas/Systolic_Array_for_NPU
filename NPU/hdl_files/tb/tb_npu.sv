@@ -30,9 +30,9 @@ module tb_npu;
     logic rst;
 	
     // Interfaz al UUT
-	logic start;
     s16_t a_mat [0:K-1][0:K-1];   // matriz A
     s16_t b_mat [0:K-1][0:K-1];   // matriz B
+	logic start;
 
     logic busy;
     logic done;
@@ -44,9 +44,9 @@ module tb_npu;
     ) uut (
         .clk   (clk),
         .rst   (rst),
-        .start (start),
         .a_mat (a_mat),
         .b_mat (b_mat),
+        .start (start),
         .busy  (busy),
         .done  (done),
         .c_mat (c_mat)

@@ -28,22 +28,22 @@ module system_top #(
     // Señales internas para la MRAM (puerto A/B de 16 bits y C de 32 bits)
     //--------------------------------------------------------------------------
     // Puertos de 16 bits
-    logic we16;             // habilita escritura de A o B
-    logic re16;             // habilita lectura de A o B
-    logic mat_sel;          // 0→A, 1→B
-    logic [$clog2(K*K)-1:0] addr16; //  dirección 0…K*K–1 (fila‐major) para A/B
-    s16_t din16;            // dato de 16 bits a escribir en A/B
-    s16_t dout16;           // dato leído de A/B
-    logic ready16;          // pulso 1-clk cuando termina we16 o re16
-    logic stall16;          // 1 mientras ready16=0 (back-pressure)
+    logic we16;             // habilita escritura de A o B              // [y] from MRAM to [n]
+    logic re16;             // habilita lectura de A o B                // [y] from MRAM to MtxPref [y]
+    logic mat_sel;          // 0→A, 1→B                                 // [y] from MRAM to MtxPref [y]
+    logic [$clog2(K*K)-1:0] addr16; //  dirección 0…K*K–1 para A/B      // [y] from MRAM to MtxPref [y]
+    s16_t din16;            // dato de 16 bits a escribir en A/B        // [y] from MRAM to [n]
+    s16_t dout16;           // dato leído de A/B                        // [y] from MRAM to MtxPref [y]
+    logic ready16;          // pulso 1-clk cuando termina we16 o re16   // [y] from MRAM to MtxPref [y]
+    logic stall16;          // 1 mientras ready16=0 (back-pressure)     // [y] from MRAM to MtxPref [y]
     // Puertos de 32 bits
-    logic we32;             // habilita escritura de C
-    logic re32;             // habilita lectura de C
-    logic [$clog2(K*K)-1:0] addr32; // dirección 0…K*K–1 para C
-    s32_t din32;            // dato de 32 bits a escribir en C
-    s32_t dout32;           // dato leído de C
-    logic ready32;          // pulso 1-clk cuando termina we32 o re32
-    logic stall32;          // 1 mientras ready32=0
+    logic we32;             // habilita escritura de C                  // [y] from MRAM to [n]
+    logic re32;             // habilita lectura de C                    // [y] from MRAM to [n]
+    logic [$clog2(K*K)-1:0] addr32; // dirección 0…K*K–1 para C         // [y] from MRAM to [n]
+    s32_t din32;            // dato de 32 bits a escribir en C          // [y] from MRAM to [n]
+    s32_t dout32;           // dato leído de C                          // [y] from MRAM to [n]
+    logic ready32;          // pulso 1-clk cuando termina we32 o re32   // [y] from MRAM to [n]
+    logic stall32;          // 1 mientras ready32=0                     // [y] from MRAM to [n]
 
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
@@ -59,6 +59,7 @@ module system_top #(
         .mat_sel (mat_sel),     // 0=A, 1=B
         .addr16  (addr16),      // índice fila-major 0…K*K–1
         .din16   (din16),       // dato de entrada
+
         .dout16  (dout16),      // dato de salida
         .ready16 (ready16),     // 1-clk cuando la operación acaba
         .stall16 (stall16),     // 1 mientras la memoria no esté lista
@@ -67,19 +68,46 @@ module system_top #(
         .re32    (re32),        // 1→memC[addr32]→dout32
         .addr32  (addr32),      // índice fila-major 0…K*K–1
         .din32   (din32),       // dato de entrada
+
         .dout32  (dout32),      // dato de salida
         .ready32 (ready32),     // 1-clk cuando la operación acaba
         .stall32 (stall32)      // 1 mientras la memoria no esté lista
     );
 
-    s16_t a_mat [0:K-1][0:K-1];     // matriz A
-    s16_t b_mat [0:K-1][0:K-1];     // matriz B
-    s32_t c_mat [0:K-1][0:K-1];     // matriz resultante
+    
+    // matrix prefetcher wires 
+    logic matrices_loaded;      // señal que indica a MRAM llenada  // [y] from MtxPref to [n]
+    logic prefetch_start;       // indica que inicie el prefetch    // [y] from MtxPref to [n]
+    s16_t a_mat [0:K-1][0:K-1]; // matriz A                         // [y] from MtxPref to NPU [y]
+    s16_t b_mat [0:K-1][0:K-1]; // matriz B                         // [y] from MtxPref to NPU [y]
+    logic npu_start;            // pulso 1-ciclo: matrices cargadas // [y] from MtxPref to NPU [y]
 
-    logic npu_start;
-    logic npu_busy;
-    logic npu_done;
+    matrix_prefetcher #(
+        .K(K)
+    ) prefetch (
+        .clk              (clk),
+        .rst              (rst),
+        .matrices_ready   (matrices_loaded), // Tiene que venir del modulo que carga las matrices a MRAM
+        .prefetch_start   (prefetch_start),
+        // Conexión MRAM 16-bit
+        .dout16           (dout16),     //ok
+        .ready16          (ready16),    //ok
+        .stall16          (stall16),    //ok
 
+        .re16             (re16),       //ok
+        .mat_sel          (mat_sel),    //ok
+        .addr16           (addr16),     //ok
+        // Salida a NPU
+        .a_mat            (a_mat),
+        .b_mat            (b_mat),
+        .ready_to_npu     (npu_start)
+    );
+
+
+    // NPU wires
+    logic npu_busy;  // [y] from NPU to [n]
+    logic npu_done;  // [y] from NPU to [n]
+    s32_t c_mat [0:K-1][0:K-1]; // matriz resultante // [y] from NPU to [n]
 
     //----------------------------------------------------------------------
     // Instancia NPU
@@ -90,9 +118,9 @@ module system_top #(
     ) u_npu (
         .clk   (clk),
         .rst   (rst),
-        .start (npu_start),
         .a_mat (a_mat),
         .b_mat (b_mat),
+        .start (npu_start),
         .busy  (npu_busy),
         .done  (npu_done),
         .c_mat (c_mat)

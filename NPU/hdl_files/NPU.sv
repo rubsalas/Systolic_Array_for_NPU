@@ -22,9 +22,9 @@ module NPU #(
     input  logic clk,
     input  logic rst,
 
-    input  logic  start,                           // inicia el bloque
     input  s16_t  a_mat [0:K-1][0:K-1],            // matrices de entrada
     input  s16_t  b_mat [0:K-1][0:K-1],
+    input  logic  start,                           // inicia el bloque
 
     output logic  busy,                            // 1 → NPU ocupado
     output logic  done,                            // pulso 1-clk C lista
