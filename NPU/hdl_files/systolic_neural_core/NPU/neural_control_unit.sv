@@ -8,10 +8,9 @@
 //
 // Parámetro : K (dimensión matriz = profundidad MAC)
 //==============================================================================
-
 `timescale 1ns/1ps
 
-module control_unit #(
+module neural_control_unit #(
     parameter int K = 4
 )(
     input  logic clk,

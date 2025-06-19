@@ -88,29 +88,6 @@ set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_npu -section_id tb_npu
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_mram -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_mram
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_mram -section_id tb_mram
-set_global_assignment -name QIP_FILE hdl_files/vjtag/vjtag/synthesis/vjtag.qip
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/pkgs/pkg_systolic.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/NPU.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/multiplier.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_multiplier.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/accumulator.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_accumulator.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/relu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_relu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/pe.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_pe.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/systolic_array.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_array/tb/tb_systolic_array.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/matrix_feeder.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/tb/tb_matrix_feeder.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/control_unit.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/tb/tb_control_unit.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/system_top.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/tb/tb_npu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/MRAM.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/tb/tb_mram.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/sseg_display/sseg_display.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/sseg_display/hex_to_sseg.sv
 set_location_assignment PIN_AF14 -to clk
 set_location_assignment PIN_AB12 -to rst
 set_location_assignment PIN_AD27 -to sseg_hex1[6]
@@ -146,13 +123,9 @@ set_location_assignment PIN_AH30 -to sseg_hex1[2]
 set_location_assignment PIN_AH29 -to sseg_hex1[1]
 set_location_assignment PIN_AJ29 -to sseg_hex1[0]
 set_location_assignment PIN_V16 -to rst_led
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/matrix_prefetcher.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/tb/tb_matrix_prefetcher.sv
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_matrix_prefetcher -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_matrix_prefetcher
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_matrix_prefetcher -section_id tb_matrix_prefetcher
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/matrix_committer.sv
-set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/tb/tb_matrix_committer.sv
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_multiplier.sv -section_id tb_multiplier
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_accumulator.sv -section_id tb_accumulator
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_array/tb/tb_relu.sv -section_id tb_relu
@@ -167,4 +140,32 @@ set_global_assignment -name EDA_TEST_BENCH_NAME tb_matrix_committer -section_id 
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_matrix_committer
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_matrix_committer -section_id tb_matrix_committer
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/memory/tb/tb_matrix_committer.sv -section_id tb_matrix_committer
+set_global_assignment -name QIP_FILE hdl_files/vjtag/vjtag/synthesis/vjtag.qip
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/pkgs/pkg_systolic.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/sseg_display/sseg_display.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/sseg_display/hex_to_sseg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_relu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_pe.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_multiplier.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_accumulator.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/relu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/pe.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/multiplier.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/accumulator.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/tb/tb_systolic_array.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/systolic_array/systolic_array.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/NPU.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/neural_control_unit.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/matrix_feeder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/tb/tb_npu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/tb/tb_neural_control_unit.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/NPU/tb/tb_matrix_feeder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/systolic_neural_core.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/matrix_prefetcher.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/matrix_committer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/tb/tb_matrix_prefetcher.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/tb/tb_matrix_committer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/tb/tb_mram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/memory/MRAM.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/system_top.sv
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

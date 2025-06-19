@@ -11,7 +11,6 @@
 //    4) `done = 1` un ciclo -> matriz C estable en `c_mat`; el sistema puede
 //       leerla o lanzar otro `start`.
 // ============================================================================
-
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
@@ -36,9 +35,9 @@ module NPU #(
     logic valid_stream;
 
     /*------------ Control Unit ----------------*/
-    control_unit #(
+    neural_control_unit #(
         .K(K)
-    ) controller (
+    ) neural_controller (
         .clk            (clk),
         .rst            (rst),
         .start          (start),

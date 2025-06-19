@@ -1,11 +1,11 @@
 /*
-Test bench for Control Unit module
+Test bench for Neural Control Unit module
 Date: 14/06/25
 Approved
 */
 import pkg_systolic::*;
 
-module tb_control_unit;
+module tb_neural_control_unit;
 
 	timeunit 1ps;
     timeprecision 1ps;
@@ -25,7 +25,7 @@ module tb_control_unit;
     logic busy;
     logic done;
 
-	control_unit #(
+	neural_control_unit #(
         .K(K)
     ) uut (
         .clk         (clk),
@@ -45,7 +45,7 @@ module tb_control_unit;
 
     // Initialize inputs
     initial begin
-		$display("control unit module testbench:\n");
+		$display("\nNeural Control Unit module testbench:\n");
 
 		clk = 1'b0;
         rst = 1'b0;

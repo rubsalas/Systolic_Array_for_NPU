@@ -10,7 +10,6 @@
 //   • Una vez leídas ambas matrices, emite 'ready_to_npu' (pulso 1-ciclo)
 //     y permanece en DONE hasta que 'prefetch_start' vuelva a 0.
 //------------------------------------------------------------------------------
-
 `timescale 1ns/1ps
 import pkg_systolic::*;
 

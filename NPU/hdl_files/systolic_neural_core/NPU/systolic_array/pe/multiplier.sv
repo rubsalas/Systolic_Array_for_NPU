@@ -1,5 +1,18 @@
 //------------------------------------------------------------------------------
-// multiplier.sv  –  Producto combinacional
+// multiplier.sv  –  Módulo multiplicador para hardware
+//
+//   p_out = a_in × b_in
+//
+// • 0 ciclos de latencia      →  completamente combinacional.
+// • 1 multiplicador          →  mapeado a DSP (o LUT según la FPGA).
+// • Sin registros internos.
+//
+//   Puertos
+//   -------
+//     a_in   : operando A (s16_t, 16 bits con signo)
+//     b_in   : operando B (s16_t, 16 bits con signo)
+//     p_out  : producto   (s32_t, 32 bits con signo)
+//
 //------------------------------------------------------------------------------
 import pkg_systolic::*;
 

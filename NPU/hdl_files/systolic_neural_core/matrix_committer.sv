@@ -9,7 +9,6 @@
 //   • Al completar todas las escrituras, emite 'ready_to_ram' (pulso 1-ciclo)
 //     y permanece en DONE hasta que 'commit_start' regrese a 0.
 //------------------------------------------------------------------------------ 
-
 `timescale 1ns/1ps
 import pkg_systolic::*;
 

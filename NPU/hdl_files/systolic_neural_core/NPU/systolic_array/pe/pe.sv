@@ -1,6 +1,3 @@
-`timescale 1ns/1ps
-import pkg_systolic::*;
-
 //------------------------------------------------------------------------------
 // pe.sv  –  Processing Element (dataflow: Output-Stationary)
 //
@@ -18,11 +15,14 @@ import pkg_systolic::*;
 //     c_out         : resultado ReLU (32 bit)
 //     c_valid       : pulso 1-clk, coincide con ciclo en que c_out es válido
 //------------------------------------------------------------------------------
+`timescale 1ns/1ps
+import pkg_systolic::*;
+
 module pe #(
     parameter int K = 4            // profundidad de la multiplicación-suma
 )(
     input  logic  clk,
-    input  logic  rst,             // activo-alto (igual que accumulator)
+    input  logic  rst,
 
     // flujo A/B
     input  s16_t  a_in,

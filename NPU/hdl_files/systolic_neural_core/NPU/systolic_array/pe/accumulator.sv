@@ -17,7 +17,7 @@
 import pkg_systolic::*;
 
 module accumulator #(
-	parameter int K = 4                       // nº de productos por celda
+	parameter int K = 4		// num de productos por celda
 	)(
 	input  logic clk,
 	input  logic rst,

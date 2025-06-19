@@ -13,7 +13,7 @@
 import pkg_systolic::*;
 
 module MRAM #(
-    parameter int K = 4             // Dimensión de cada matriz (K×K)
+    parameter int K = 4             // dimensión de cada matriz (K×K)
 )(
     input  logic        clk,
     input  logic        rst,

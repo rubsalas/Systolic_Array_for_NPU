@@ -1,9 +1,10 @@
-//=============================================================================
+//==================================================================================
 // npu_system_top
-//   • Instancia la NPU (systolic array + feeder + CU)
-//   • Instancia una MRAM sencilla que actúa como memoria global
+//   • Instancia el Systolic Neural Core (NPU + matrix prefetcher + matrix commiter)
+//   • Instancia una MRAM que actúa como memoria global para las matrices
 //   • Posible conexion JTAG
-//=============================================================================
+//   • Conexiones a displays de la FPGA
+//==================================================================================
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
@@ -23,27 +24,80 @@ module system_top #(
     output logic rst_led
 );
 
+    //––– Señales de control externas (lectura) –––
+    /* Esta vendrá del matrix_load_unit luego de revisar que se han cargado las matrices */
+	logic matrices_loaded;  // MRAM ya cargó matrices A/B		        // [n] from CU(?) to SNC (MtxPref) [y]
+	/* Este vendrá de un control unit luego de revisar que la memoria pueda ser leida */
+	logic prefetch_start;   // pulso para arrancar el prefetch	        // [n] from CU(?) to SNC (MtxPref) [y]
+    /* Este vendrá de un control unit luego de revisar que la memoria pueda ser escrita */
+	logic commit_start;     // pulso para arrancar el commit	        // [n] from CU(?) to SNC (MtxComt) [y]
+    /* */
+    logic npu_busy;         // NPU esta en media ejecucion			    // [y] from SNC (NPU) to CU(?) [n]
+	/* */
+    logic npu_done;         // NPU calculo matriz resultante 			// [y] from SNC (NPU) to CU(?) [n]
+	/* Esta irá al matrix_store_unit para avisar que se ha escrito en MRAM y es posible leer la matriz */
+	logic result_stored;    // commit terminado					        // [y] from SNC (MtxComt) to CU(?) [n]
+
+    //------------------------------------------------------------------------------
+    // Instancia del Systolic Neural Core
+    //------------------------------------------------------------------------------
+    systolic_neural_core #(
+        .M (M),
+        .K (K)
+    ) SNC (
+        .clk             (clk),
+        .rst             (rst),
+
+        // Control externo (lectura)
+        .matrices_loaded (matrices_loaded),
+        .prefetch_start  (prefetch_start),
+
+        // MRAM 16-bit interface
+        .dout16          (dout16),
+        .ready16         (ready16),
+        .stall16         (stall16),
+
+        .re16            (re16),
+        .mat_sel         (mat_sel),
+        .addr16          (addr16),
+
+        // Control externo (escritura)
+        .commit_start    (commit_start),
+
+        // MRAM 32-bit interface
+        .ready32         (ready32),
+        .stall32         (stall32),
+
+        .we32            (we32),
+        .addr32          (addr32),
+        .din32           (din32),
+
+        // Status
+        .npu_busy        (npu_busy),
+        .npu_done        (npu_done),
+        .result_stored   (result_stored)
+    );
 
     //--------------------------------------------------------------------------
     // Señales internas para la MRAM (puerto A/B de 16 bits y C de 32 bits)
     //--------------------------------------------------------------------------
     // Puertos de 16 bits
-    logic we16;             // habilita escritura de A o B              // [y] from MRAM to [n]
-    logic re16;             // habilita lectura de A o B                // [y] from MRAM to MtxPref [y]
-    logic mat_sel;          // 0→A, 1→B                                 // [y] from MRAM to MtxPref [y]
-    logic [$clog2(K*K)-1:0] addr16; //  dirección 0…K*K–1 para A/B      // [y] from MRAM to MtxPref [y]
-    s16_t din16;            // dato de 16 bits a escribir en A/B        // [y] from MRAM to [n]
-    s16_t dout16;           // dato leído de A/B                        // [y] from MRAM to MtxPref [y]
-    logic ready16;          // pulso 1-clk cuando termina we16 o re16   // [y] from MRAM to MtxPref [y]
-    logic stall16;          // 1 mientras ready16=0 (back-pressure)     // [y] from MRAM to MtxPref [y]
+    logic we16;             // habilita escritura de A o B              // [n] from (?) to MRAM [y] /*!*/
+    logic re16;             // habilita lectura de A o B                // [y] from SNC (MtxPref) to MRAM [y]
+    logic mat_sel;          // 0→A, 1→B                                 // [y] from SNC (MtxPref) to MRAM [y]
+    logic [$clog2(K*K)-1:0] addr16; //  dirección 0…K*K–1 para A/B      // [y] from SNC (MtxPref) to MRAM [y]
+    s16_t din16;            // dato de 16 bits a escribir en A/B        // [n] from (?) to MRAM [y] /*!*/
+    s16_t dout16;           // dato leído de A/B                        // [y] from MRAM to SNC (MtxPref) [y]
+    logic ready16;          // pulso 1-clk cuando termina we16 o re16   // [y] from MRAM to SNC (MtxPref) [y]
+    logic stall16;          // 1 mientras ready16=0 (back-pressure)     // [y] from MRAM to SNC (MtxPref) [y]
     // Puertos de 32 bits
-    logic we32;             // habilita escritura de C                  // [y] from MRAM to MtxComt [y]
-    logic re32;             // habilita lectura de C                    // [y] from MRAM to [n]
-    logic [$clog2(K*K)-1:0] addr32; // dirección 0…K*K–1 para C         // [y] from MRAM to MtxComt [y]
-    s32_t din32;            // dato de 32 bits a escribir en C          // [y] from MRAM to MtxComt [y]
-    s32_t dout32;           // dato leído de C                          // [y] from MRAM to [n]
-    logic ready32;          // pulso 1-clk cuando termina we32 o re32   // [y] from MRAM to MtxComt [y]
-    logic stall32;          // 1 mientras ready32=0                     // [y] from MRAM to MtxComt [y]
+    logic we32;             // habilita escritura de C                  // [y] from SNC (MtxComt) to MRAM [y]
+    logic re32;             // habilita lectura de C                    // [n] from (?) to MRAM [y] /*!*/
+    logic [$clog2(K*K)-1:0] addr32; // dirección 0…K*K–1 para C         // [y] from SNC (MtxComt) to MRAM [y]
+    s32_t din32;            // dato de 32 bits a escribir en C          // [y] from SNC (MtxComt) to MRAM [y]
+    s32_t dout32;           // dato leído de C                          // [y] from MRAM to (?) [n] /*!*/
+    logic ready32;          // pulso 1-clk cuando termina we32 o re32   // [y] from MRAM to SNC (MtxComt) [y]
+    logic stall32;          // 1 mientras ready32=0                     // [y] from MRAM to SNC (MtxComt) [y]
 
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
@@ -72,93 +126,6 @@ module system_top #(
         .dout32  (dout32),      // dato de salida
         .ready32 (ready32),     // 1-clk cuando la operación acaba
         .stall32 (stall32)      // 1 mientras la memoria no esté lista
-    );
-
-    
-    // matrix prefetcher wires 
-    logic matrices_loaded;      // señal que indica que MRAM ha sido llenada  // [y] from MtxPref to [n]
-    /* Este vendrá de un control unit luego de revisar que la memoria pueda ser leida */
-    logic prefetch_start;       // indica que inicie el prefetch    // [y] from MtxPref to [n]
-    s16_t a_mat [0:K-1][0:K-1]; // matriz A                         // [y] from MtxPref to NPU [y]
-    s16_t b_mat [0:K-1][0:K-1]; // matriz B                         // [y] from MtxPref to NPU [y]
-    logic npu_start;            // pulso 1-ciclo: matrices cargadas // [y] from MtxPref to NPU [y]
-
-    //----------------------------------------------------------------------
-    // Instancia Matrix Prefetcher
-    //----------------------------------------------------------------------
-    matrix_prefetcher #(
-        .K(K)
-    ) prefetch (
-        .clk            (clk),
-        .rst            (rst),
-        // Control signals
-        .matrices_ready (matrices_loaded), // Tiene que venir del modulo que carga las matrices a MRAM
-        .prefetch_start (prefetch_start),  // Vendrá de un control unit
-        // Conexión MRAM 16-bit
-        .dout16         (dout16),     //ok
-        .ready16        (ready16),    //ok
-        .stall16        (stall16),    //ok
-
-        .re16           (re16),       //ok
-        .mat_sel        (mat_sel),    //ok
-        .addr16         (addr16),     //ok
-        // Salida a NPU
-        .a_mat          (a_mat),
-        .b_mat          (b_mat),
-        // Salida de control
-        .ready_to_npu   (npu_start)
-    );
-
-
-    // NPU wires
-    logic npu_busy;  // [y] from NPU to [n]
-    logic npu_done;  // [y] from NPU to MtxComt [y]
-    s32_t c_mat [0:K-1][0:K-1]; // matriz C resultante // [y] from NPU to MtxComt [y]
-
-    //----------------------------------------------------------------------
-    // Instancia NPU
-    //----------------------------------------------------------------------
-    NPU #(
-        .M(K),
-        .K(K)
-    ) u_npu (
-        .clk   (clk),
-        .rst   (rst),
-        // Prefetcher
-        .a_mat (a_mat),
-        .b_mat (b_mat),
-        .start (npu_start),
-
-        .busy  (npu_busy),  // Enviar a Control Unit (?)
-        .done  (npu_done),
-        .c_mat (c_mat)
-    );
-    /* Este vendrá de un control unit luego de revisar que la memoria pueda ser escrita */
-    logic commit_start;       // indica que inicie el commit    // [y] from MtxComt to [n]
-    logic ready_to_ram;       // señal que indica que se ha escrito en MRAM // [y] from MtxComt to [n]
-
-    //----------------------------------------------------------------------
-    // Instancia Matrix Commiter
-    //----------------------------------------------------------------------
-    matrix_committer #(
-        .K(K)
-    ) commiter (
-        .clk          (clk),
-        .rst          (rst),
-        // Control signals
-        .data_ready   (npu_done),       //ok
-        .commit_start (commit_start),   // Vendrá de un control unit
-        // Entradas desde NPU
-        .c_mat        (c_mat),          //ok
-        // Conexión MRAM 32-bit
-        .ready32      (ready32),        //ok
-        .stall32      (stall32),        //ok
-
-        .we32         (we32),           //ok
-        .addr32       (addr32),         //ok
-        .din32        (din32),          //ok
-        // Salida de control
-        .ready_to_ram (ready_to_ram)    // Tiene que ir al modulo que leerá la matriz resultante del MRAM
     );
 
 
@@ -205,6 +172,11 @@ module system_top #(
         .virtual_state_cir(virtual_state_cir),
         .virtual_state_uir(virtual_state_uir)
     );
+
+
+    //----------------------------------------------------------------------
+    // FPGA Display
+    //----------------------------------------------------------------------
 
     // Instancia del módulo que muestra el valor de TDI en HEX0 y HEX1
     sseg_display tdi_disp_inst (
