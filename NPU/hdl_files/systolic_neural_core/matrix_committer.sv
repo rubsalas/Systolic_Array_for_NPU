@@ -68,7 +68,7 @@ module matrix_committer #(
         case (state)
             IDLE:
                 // arranca solo si la matriz está lista y hay pulso de commit_start
-                if (data_ready && commit_start)
+                if (commit_start)
                     next_state = WRITE_C;
 
             WRITE_C:

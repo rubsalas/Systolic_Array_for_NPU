@@ -35,7 +35,7 @@ module systolic_neural_core #(
 	//––– Puerto MRAM de 32 bits (escritura) –––
 	input  logic             ready32,          // MRAM listo para recibir			(to MtxComt [y])
 	input  logic             stall32,          // back-pressure						(to MtxComt [y])
-	
+
 	output logic             we32,             // escribe C en MRAM					(from MtxComt [y])
 	output logic [$clog2(K*K)-1:0] addr32,     // dirección fila-major				(from MtxComt [y])
 	output s32_t             din32,            // dato a escribir					(from MtxComt [y])
@@ -56,7 +56,7 @@ module systolic_neural_core #(
     //----------------------------------------------------------------------
     matrix_prefetcher #(
         .K(K)
-    ) prefetch (
+	) prefetcher (
         .clk            (clk),
         .rst            (rst),
         // Control signals
@@ -105,7 +105,7 @@ module systolic_neural_core #(
     //----------------------------------------------------------------------
     matrix_committer #(
         .K(K)
-    ) commiter (
+	) committer (
         .clk          (clk),
         .rst          (rst),
         // Control signals
