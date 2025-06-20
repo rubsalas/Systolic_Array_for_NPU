@@ -9,8 +9,8 @@
 import pkg_systolic::*;
 
 module system_top #(
-    parameter int M = 4,
-    parameter int K = 4     // dimensión de matriz (K×K)
+    parameter int K = 4,            // dimensión de matriz (K×K)
+    parameter int P = 32            // cantidad de bits para perf. counters
 )(
     input  logic clk,
     input  logic rst,
@@ -39,9 +39,17 @@ module system_top #(
 	/* Esta irá al matrix_store_unit para avisar que se ha escrito en MRAM y es posible leer la matriz */
 	logic result_stored;    // commit terminado					        // [y] from SNC (MtxComt) to CU(?) [n]
 
-    //--------------------------------------------------------------------------
-    // Señales internas para la MRAM (puerto A/B de 16 bits y C de 32 bits)
-    //--------------------------------------------------------------------------
+    //––– Arithmetic Op. Performance Counters (via NPU) –––
+    // Performance counters por PE
+    logic [P-1:0] pe_mult_count [0:K-1][0:K-1];
+    logic [P-1:0] pe_sum_count  [0:K-1][0:K-1];
+    logic [P-1:0] pe_accum_count[0:K-1][0:K-1];
+    // Performance counters totales agregados
+    logic [P-1:0] total_mult_count;
+    logic [P-1:0] total_sum_count;
+    logic [P-1:0] total_accum_count;
+
+    //--- Señales internas para la MRAM (puerto A/B de 16 bits y C de 32 bits) ---
     // Puertos de 16 bits
     logic we16;             // habilita escritura de A o B              // [n] from (?) to MRAM [y] /*!*/
     logic re16;             // habilita lectura de A o B                // [y] from SNC (MtxPref) to MRAM [y]
@@ -64,8 +72,8 @@ module system_top #(
     // Instancia del Systolic Neural Core
     //------------------------------------------------------------------------------
     systolic_neural_core #(
-        .M (M),
-        .K (K)
+        .K(K),
+        .P(P)
     ) SNC (
         .clk             (clk),
         .rst             (rst),
@@ -97,14 +105,22 @@ module system_top #(
         // Status
         .npu_busy        (npu_busy),
         .npu_done        (npu_done),
-        .result_stored   (result_stored)
+        .result_stored   (result_stored),
+
+        // Arithmetic Op. Performance counters
+        .pe_mult_count      (pe_mult_count),
+        .pe_sum_count       (pe_sum_count),
+        .pe_accum_count     (pe_accum_count),
+        .total_mult_count   (total_mult_count),
+        .total_sum_count    (total_sum_count),
+        .total_accum_count  (total_accum_count)
     );
 
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
     //--------------------------------------------------------------------------
     MRAM #(
-        .K (K)
+        .K(K)
     ) mram (
         .clk     (clk),
         .rst     (rst),
@@ -134,7 +150,7 @@ module system_top #(
     // JTAG lol
     //----------------------------------------------------------------------
 
-    // Señales internas para el JTAG
+    //--- Señales internas para el JTAG ---
     logic tck;
     // logic tdi;
     logic [7:0] ir_in, ir_out;

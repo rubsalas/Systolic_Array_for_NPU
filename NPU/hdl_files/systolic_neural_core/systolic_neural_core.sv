@@ -1,14 +1,34 @@
 //------------------------------------------------------------------------------
-// systolic_neural_core.sv
-//------------------------------------------------------------------------------
-// Encapsula matrix_prefetcher, NPU y matrix_committer
+// systolic_neural_core.sv  –  Wrapper para flujo completo de cómputo
+//
+//   • Integra tres bloques:
+//       1. matrix_prefetcher   → lectura de matrices A/B desde MRAM (16-bit).
+//       2. NPU                 → malla sistólica de PEs con performance counters.
+//       3. matrix_committer    → escritura de matriz C en MRAM (32-bit).
+//   • Orquesta handshakes con la MRAM (re16/ready16/stall16, we32/ready32/stall32).
+//   • Señales de control externas:
+//       - matrices_loaded : indica que A y B están en MRAM.
+//       - prefetch_start  : pulso 1-clk para arrancar la lectura de A/B.
+//       - commit_start    : pulso 1-clk para arrancar la escritura de C.
+//   • Exposición de estado interno:
+//       - npu_busy        : ‘1’ mientras el NPU está computando.
+//       - npu_done        : pulso 1-clk al finalizar la computación.
+//       - result_stored   : pulso 1-clk al completar la escritura de C.
+//   • Performance counters desde la NPU (malla sistólica):
+//       - pe_mult_count  [0:K-1][0:K-1] : multiplicaciones por PE.
+//       - pe_sum_count   [0:K-1][0:K-1] : sumas por PE.
+//       - pe_accum_count [0:K-1][0:K-1] : resultados finales por PE.
+//       - total_mult_count, total_sum_count, total_accum_count : agregados.
+//   • Parámetros:
+//       - K : tamaño de la malla (PEs = K×K) y profundidad de la MAC.
+//       - P : ancho en bits de los performance counters.
 //------------------------------------------------------------------------------
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
 module systolic_neural_core #(
-  parameter int M = 4,
-  parameter int K = 4
+    parameter int K = 4,            // tamaño de la malla (PEs = M×M)
+    parameter int P = 32            // cantidad de bits para perf. counters
 )(
 	input  logic             clk,
 	input  logic             rst,
@@ -44,7 +64,15 @@ module systolic_neural_core #(
 	output logic             npu_busy,         // busy desde NPU					(from NPU [y])
 	output logic             npu_done,         // done desde NPU					(from NPU [y])
 	/* Esta irá al matrix_store_unit para avisar que se ha escrito en MRAM y es posible leer la matriz */
-	output logic             result_stored     // commit terminado					(from MtxComt [y])
+	output logic             result_stored,    // commit terminado					(from MtxComt [y])
+
+    //––– Performance counters del Systolic Array (vía NPU) –––
+    output logic [P-1:0]     pe_mult_count  [0:K-1][0:K-1],
+    output logic [P-1:0]     pe_sum_count   [0:K-1][0:K-1],
+    output logic [P-1:0]     pe_accum_count [0:K-1][0:K-1],
+    output logic [P-1:0]     total_mult_count,
+    output logic [P-1:0]     total_sum_count,
+    output logic [P-1:0]     total_accum_count
 );
 
     s16_t a_mat [0:K-1][0:K-1]; // matriz A                         // [y] from MtxPref to NPU [y]
@@ -83,7 +111,6 @@ module systolic_neural_core #(
     // Instancia NPU
     //----------------------------------------------------------------------
     NPU #(
-        .M(K),
         .K(K)
     ) u_npu (
         .clk   (clk),
@@ -95,7 +122,15 @@ module systolic_neural_core #(
 
         .busy  (npu_busy),
         .done  (result_done),
-        .c_mat (c_mat)
+        .c_mat (c_mat),
+
+        // Forwarding de performance counters
+        .pe_mult_count     (pe_mult_count),
+        .pe_sum_count      (pe_sum_count),
+        .pe_accum_count    (pe_accum_count),
+        .total_mult_count  (total_mult_count),
+        .total_sum_count   (total_sum_count),
+        .total_accum_count (total_accum_count)
     );
 
 	assign npu_done = result_done;
@@ -121,7 +156,7 @@ module systolic_neural_core #(
         .addr32       (addr32),
         .din32        (din32),
         // Salida de control
-        .ready_to_ram (result_stored)    // Tiene que ir al modulo que leerá la matriz resultante del MRAM
+        .ready_to_ram (result_stored)   // Tiene que ir al modulo que leerá la matriz resultante del MRAM
     );
 
 endmodule

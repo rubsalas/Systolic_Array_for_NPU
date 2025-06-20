@@ -11,37 +11,49 @@ module tb_pe;
     timeprecision 1ps;
 
     // Parámetros
-    localparam int K        = 3;    // productos por celda
+    localparam int K        = 4;    // productos por celda
+    localparam int P        = 32;   // cantidad de bits para perf. counters
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
     localparam int RANGE    = 10;   // rango de valores por usar
 
     logic clk;
     logic rst;
 
-    // Interfaz al DUT
-    s16_t  a_in;
-    s16_t  b_in;
-    logic  valid_in;
+    // Interfaz al UUT
+    s16_t a_in;
+    s16_t b_in;
+    logic valid_in;
 
-    s16_t  a_out;
-    s16_t  b_out;
-    logic  valid_out;
+    s16_t a_out;
+    s16_t b_out;
+    logic valid_out;
 
-    s32_t  c_out;
-    logic  c_valid;
+    s32_t c_out;
+    logic c_valid;
+
+    logic [P-1:0] perf_mult_count;  // número de multiplicaciones realizadas
+    logic [P-1:0] perf_sum_count;   // número de sumas en el acumulador
+    logic [P-1:0] perf_accum_count; // número de bloques acumulados (resultados)
 
     /* pe unit under testing */
-    pe #(.K(K)) uut (
-        .clk        (clk),
-        .rst        (rst),
-        .a_in       (a_in),
-        .b_in       (b_in),
-        .valid_in   (valid_in),
-        .a_out      (a_out),
-        .b_out      (b_out),
-        .valid_out  (valid_out),
-        .c_out      (c_out),
-        .c_valid    (c_valid)
+    pe #(
+        .K(K),
+        .P(P)
+    ) uut (
+        .clk                (clk),
+        .rst                (rst),
+        .a_in               (a_in),
+        .b_in               (b_in),
+        .valid_in           (valid_in),
+
+        .a_out              (a_out),
+        .b_out              (b_out),
+        .valid_out          (valid_out),
+        .c_out              (c_out),
+        .c_valid            (c_valid),
+        .perf_mult_count    (perf_mult_count),
+        .perf_sum_count     (perf_sum_count),
+        .perf_accum_count   (perf_accum_count)
     );
 
     // inner wiring
@@ -85,10 +97,10 @@ module tb_pe;
     // Variables de referencia
     // s32_t exp_sum;
     // int   err_cnt = 0;
-    int   seed    = 29;
+    // int   seed    = 29;
 
     // Sembrar el RNG una sola vez
-    initial $urandom(seed);
+    // initial $urandom(seed);
 
     initial	begin
 
@@ -107,7 +119,7 @@ module tb_pe;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
         a_in = 2; 
-        b_in = 1; 
+        b_in = 5; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -119,7 +131,7 @@ module tb_pe;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
         a_in = -1; 
-        b_in = 2; 
+        b_in = -4; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -130,8 +142,20 @@ module tb_pe;
 		valid_in = 1;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
-        a_in = 3; 
-        b_in = 3; 
+        a_in = 0; 
+        b_in = 8; 
+
+        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
+                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
+	 
+        @(posedge clk);
+
+        // Suma 4/4
+		valid_in = 1;
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 6; 
+        b_in = 1; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -173,7 +197,7 @@ module tb_pe;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
         a_in = 2; 
-        b_in = -2; 
+        b_in = 0; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -185,7 +209,7 @@ module tb_pe;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
         a_in = -1; 
-        b_in = 4;  
+        b_in = 6;  
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -196,8 +220,20 @@ module tb_pe;
 		valid_in = 1;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
-        a_in = 3; 
-        b_in = 1; 
+        a_in = 0; 
+        b_in = -9; 
+
+        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
+                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
+	 
+        @(posedge clk);
+
+        // Suma 4/4
+		valid_in = 1;
+        // a_in  = $urandom_range(RANGE * 2) - RANGE; 
+        // b_in  = $urandom_range(RANGE * 2) - RANGE;
+        a_in = 6;
+        b_in = 3; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -220,6 +256,6 @@ module tb_pe;
     end
 
     initial
-	#3000 $finish;                                 
+	#2000 $finish;                                 
 
 endmodule

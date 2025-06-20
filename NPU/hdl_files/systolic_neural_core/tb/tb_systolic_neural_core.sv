@@ -12,6 +12,9 @@ add wave -radix signed /tb_systolic_neural_core/memC
 add wave -radix signed /tb_systolic_neural_core/a_mat
 add wave -radix signed /tb_systolic_neural_core/b_mat
 add wave -radix signed /tb_systolic_neural_core/c_mat
+add wave -radix signed /tb_systolic_neural_core/pe_mult_count
+add wave -radix signed /tb_systolic_neural_core/pe_sum_count
+add wave -radix signed /tb_systolic_neural_core/pe_accum_count
 */
 import pkg_systolic::*;
 
@@ -22,6 +25,7 @@ module tb_systolic_neural_core;
 
     // Parámetros
     localparam int K        = 4;    // productos por celda
+    localparam int P        = 32;   // cantidad de bits para perf. counters
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
     // localparam int RANGE    = 10;   // rango de valores por usar
 
@@ -41,6 +45,16 @@ module tb_systolic_neural_core;
     logic npu_done;         // NPU calculo matriz resultante 			// [y] from SNC (NPU) to CU(?) [n]
 	/* Esta irá al matrix_store_unit para avisar que se ha escrito en MRAM y es posible leer la matriz */
 	logic result_stored;    // commit terminado					        // [y] from SNC (MtxComt) to CU(?) [n]
+
+    //––– Performance Counters (via NPU) –––
+    // Performance counters por PE
+    logic [P-1:0] pe_mult_count [0:K-1][0:K-1];
+    logic [P-1:0] pe_sum_count  [0:K-1][0:K-1];
+    logic [P-1:0] pe_accum_count[0:K-1][0:K-1];
+    // Performance counters totales agregados
+    logic [P-1:0] total_mult_count;
+    logic [P-1:0] total_sum_count;
+    logic [P-1:0] total_accum_count;
 
     //--------------------------------------------------------------------------
     // Señales internas para la MRAM (puerto A/B de 16 bits y C de 32 bits)
@@ -67,47 +81,55 @@ module tb_systolic_neural_core;
     // Instancia del Systolic Neural Core
     //------------------------------------------------------------------------------
     systolic_neural_core #(
-        .M (K),
-        .K (K)
+        .K(K),
+        .P(P)
     ) uut (
-        .clk             (clk),
-        .rst             (rst),
+        .clk                (clk),
+        .rst                (rst),
 
         // Control externo (lectura)
-        .matrices_loaded (matrices_loaded),
-        .prefetch_start  (prefetch_start),
+        .matrices_loaded    (matrices_loaded),
+        .prefetch_start     (prefetch_start),
 
         // MRAM 16-bit interface
-        .dout16          (dout16),
-        .ready16         (ready16),
-        .stall16         (stall16),
+        .dout16             (dout16),
+        .ready16            (ready16),
+        .stall16            (stall16),
 
-        .re16            (re16),
-        .mat_sel         (mat_sel),
-        .addr16          (addr16),
+        .re16               (re16),
+        .mat_sel            (mat_sel),
+        .addr16             (addr16),
 
         // Control externo (escritura)
-        .commit_start    (commit_start),
+        .commit_start       (commit_start),
 
         // MRAM 32-bit interface
-        .ready32         (ready32),
-        .stall32         (stall32),
+        .ready32            (ready32),
+        .stall32            (stall32),
 
-        .we32            (we32),
-        .addr32          (addr32),
-        .din32           (din32),
+        .we32               (we32),
+        .addr32             (addr32),
+        .din32              (din32),
 
         // Status
-        .npu_busy        (npu_busy),
-        .npu_done        (npu_done),
-        .result_stored   (result_stored)
+        .npu_busy           (npu_busy),
+        .npu_done           (npu_done),
+        .result_stored      (result_stored),
+
+        // Performance counters
+        .pe_mult_count      (pe_mult_count),
+        .pe_sum_count       (pe_sum_count),
+        .pe_accum_count     (pe_accum_count),
+        .total_mult_count   (total_mult_count),
+        .total_sum_count    (total_sum_count),
+        .total_accum_count  (total_accum_count)
     );
 
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
     //--------------------------------------------------------------------------
     MRAM #(
-        .K (K)
+        .K(K)
     ) mram (
         .clk     (clk),
         .rst     (rst),
@@ -246,6 +268,6 @@ module tb_systolic_neural_core;
     end
 
     initial
-	#18000 $finish;    
+	#17000 $finish;    
 
 endmodule

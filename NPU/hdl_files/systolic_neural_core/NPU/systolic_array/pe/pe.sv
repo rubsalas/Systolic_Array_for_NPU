@@ -1,25 +1,34 @@
 //------------------------------------------------------------------------------
-// pe.sv  –  Processing Element (dataflow: Output-Stationary)
+// pe.sv  –  Processing Element (dataflow: Output-Stationary) con Performance Counters
 //
 //   • Registra A y B un ciclo, los re-envía y los multiplica.
 //   • El producto se acumula durante K ciclos; al siguiente ciclo se pasa
 //     por ReLU y se emite c_out con c_valid=1.
 //   • Un ciclo después el ACC se limpia automáticamente.
+//   • Performance counters:
+//       - perf_mult_count  : número de multiplicaciones realizadas.
+//       - perf_sum_count   : número de sumas realizadas en el acumulador.
+//       - perf_accum_count : número de bloques acumulados (resultados finales).
 //
 //   Puertos
 //   -------
-//     a_in , b_in   : operandos que llegan de la izquierda / arriba
-//     valid_in      : pulso de validez asociado a a_in, b_in
-//     a_out, b_out  : mismos operandos reenviados (shift) a derecha / abajo
-//     valid_out     : validez propagada
-//     c_out         : resultado ReLU (32 bit)
-//     c_valid       : pulso 1-clk, coincide con ciclo en que c_out es válido
+//     a_in            : operando A que llega de la izquierda.
+//     b_in            : operando B que llega desde arriba.
+//     valid_in        : pulso de validez asociado a a_in, b_in.
+//     a_out, b_out    : operandos reenviados (shift) a derecha / abajo.
+//     valid_out       : validez propagada.
+//     c_out           : resultado ReLU (32 bits).
+//     c_valid         : pulso 1-clk, coincide con ciclo en que c_out es válido.
+//     perf_mult_count : contador de multiplicaciones.
+//     perf_sum_count  : contador de sumas en el acumulador.
+//     perf_accum_count: contador de resultados acumulados.
 //------------------------------------------------------------------------------
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
 module pe #(
-    parameter int K = 4            // profundidad de la multiplicación-suma
+    parameter int K = 4,            // profundidad de la multiplicación-suma
+    parameter int P = 32            // cantidad de bits para perf. counters
 )(
     input  logic  clk,
     input  logic  rst,
@@ -35,27 +44,58 @@ module pe #(
 
     // resultado
     output s32_t  c_out,
-    output logic  c_valid
+    output logic  c_valid,
+
+    // Performance counters
+    output logic [P-1:0] perf_mult_count,  // número de multiplicaciones realizadas
+    output logic [P-1:0] perf_sum_count,   // número de sumas en el acumulador
+    output logic [P-1:0] perf_accum_count  // número de bloques acumulados (resultados)
 );
 
     //--------------------------------------------------------------------------
-    // 1. Registradores de paso (shift) para A, B y validez
+    // 0. Contadores internos
+    //--------------------------------------------------------------------------
+    logic [P-1:0] mult_count_reg;   // incrementa en cada ciclo donde v_reg=1 (una multiplicación válida).
+    logic [P-1:0] sum_count_reg;    // incrementa también con v_reg (una suma al acumulador por entrada válida).
+    logic [P-1:0] accum_count_reg;  // incrementa con last_prod (cuando acaba un bloque de K sumas y hay un resultado final).
+
+    //--------------------------------------------------------------------------
+    // 1. Registros de paso para A, B y validez
     //--------------------------------------------------------------------------
     s16_t a_reg, b_reg;
     logic v_reg;
+
+    logic last_prod;
 
     always_ff @(posedge clk) begin
         if (rst) begin
             a_reg <= '0;
             b_reg <= '0;
             v_reg <= 1'b0;
+            // reset counters
+            mult_count_reg <= 0;
+            sum_count_reg  <= 0;
+            accum_count_reg<= 0;
         end
         else begin
             a_reg <= a_in;
             b_reg <= b_in;
             v_reg <= valid_in;
+
+            // Increment counters based on events
+            if (v_reg) begin
+                mult_count_reg <= mult_count_reg + 1;
+                sum_count_reg  <= sum_count_reg  + 1;
+            end
+            if (last_prod) begin
+                accum_count_reg <= accum_count_reg + 1;
+            end
         end
     end
+
+    assign perf_mult_count  = mult_count_reg;
+    assign perf_sum_count   = sum_count_reg;
+    assign perf_accum_count = accum_count_reg;
 
     assign a_out     = a_reg;
     assign b_out     = b_reg;
@@ -76,7 +116,6 @@ module pe #(
     // 3. Acumulador (suma de K productos)
     //--------------------------------------------------------------------------
     s32_t acc_val;
-    logic last_prod;
 
     accumulator #(.K(K)) acc (
         .clk       (clk),

@@ -13,6 +13,9 @@ add wave -radix signed /tb_npu/b_row0
 add wave -radix binary /tb_npu/data_validity
 add wave -radix binary /tb_npu/c_valid_band
 add wave -radix signed /tb_npu/c_mat
+add wave -radix signed /tb_npu/pe_mult_count
+add wave -radix signed /tb_npu/pe_sum_count
+add wave -radix signed /tb_npu/pe_accum_count
 */
 import pkg_systolic::*;
 
@@ -23,6 +26,7 @@ module tb_npu;
 
     // Parámetros
     localparam int K        = 4;    // productos por celda
+    localparam int P        = 32;   // cantidad de bits para perf. counters
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
     // localparam int RANGE    = 10;   // rango de valores por usar
 
@@ -38,22 +42,37 @@ module tb_npu;
     logic done;
     s32_t c_mat [0:K-1][0:K-1];   // matriz C
 
+    // Performance counters por PE
+    logic [P-1:0] pe_mult_count [0:K-1][0:K-1];
+    logic [P-1:0] pe_sum_count  [0:K-1][0:K-1];
+    logic [P-1:0] pe_accum_count[0:K-1][0:K-1];
+    // Performance counters totales agregados
+    logic [P-1:0] total_mult_count;
+    logic [P-1:0] total_sum_count;
+    logic [P-1:0] total_accum_count;
+
 	NPU #(
-        .M(K),
-        .K(K)
+        .K(K),
+        .P(P)
     ) uut (
-        .clk   (clk),
-        .rst   (rst),
-        .a_mat (a_mat),
-        .b_mat (b_mat),
-        .start (start),
-        .busy  (busy),
-        .done  (done),
-        .c_mat (c_mat)
+        .clk                (clk),
+        .rst                (rst),
+        .a_mat              (a_mat),
+        .b_mat              (b_mat),
+        .start              (start),
+        .busy               (busy),
+        .done               (done),
+        .c_mat              (c_mat),
+        .pe_mult_count      (pe_mult_count),
+        .pe_sum_count       (pe_sum_count),
+        .pe_accum_count     (pe_accum_count),
+        .total_mult_count   (total_mult_count),
+        .total_sum_count    (total_sum_count),
+        .total_accum_count  (total_accum_count)
     );
 
     // inner wiring
-    // Control Unit wires
+    // Neural Control Unit wires
     logic result_done;
     logic valid_stream;
     logic [1:0] st;
@@ -95,13 +114,13 @@ module tb_npu;
 
         result_done = uut.result_done;
         valid_stream = uut.valid_stream;
-        st = uut.controller.st;
-        k_cnt = uut.controller.k_cnt;
+        st = uut.neural_controller.st;
+        k_cnt = uut.neural_controller.k_cnt;
         a_col0 = uut.a_col0;
         b_row0 = uut.b_row0;
         data_validity = uut.data_validity;
         fc = uut.feeder.fc;
-        c_valid_band = uut.u_array.c_valid_band;
+        c_valid_band = uut.s_array.c_valid_band;
     end
 
     // Variables de referencia
