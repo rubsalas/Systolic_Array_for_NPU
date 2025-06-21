@@ -31,6 +31,9 @@ module tb_systolic_neural_core;
 
     logic clk;
     logic rst;
+
+    //––– Señales de control de flujo –––
+    logic use_relu;         // habilita el uso del relu
 	
     //––– Señales de control externas (lectura) –––
     /* Esta vendrá del matrix_load_unit luego de revisar que se han cargado las matrices */
@@ -86,6 +89,9 @@ module tb_systolic_neural_core;
     ) uut (
         .clk                (clk),
         .rst                (rst),
+
+        // Control de flujo
+        .use_relu           (use_relu),
 
         // Control externo (lectura)
         .matrices_loaded    (matrices_loaded),
@@ -192,6 +198,8 @@ module tb_systolic_neural_core;
 		clk = 1'b1;
         rst = 1'b0;
 
+        use_relu = 1'b0;
+
         matrices_loaded = 1'b0;
         prefetch_start = 1'b0;
         commit_start = 1'b0;
@@ -240,6 +248,7 @@ module tb_systolic_neural_core;
 
         @(posedge clk);
 
+        use_relu = 1'b0;
         matrices_loaded = 1'b1;
 
         @(posedge clk);

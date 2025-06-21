@@ -1,10 +1,33 @@
-//==================================================================================
-// npu_system_top
-//   • Instancia el Systolic Neural Core (NPU + matrix prefetcher + matrix commiter)
-//   • Instancia una MRAM que actúa como memoria global para las matrices
-//   • Posible conexion JTAG
-//   • Conexiones a displays de la FPGA
-//==================================================================================
+//------------------------------------------------------------------------------
+// system_top.sv  –  Top-level integration of MRAM, Systolic Neural Core and Perf Monitor
+//
+//   • Integra los siguientes bloques:
+//       1. MRAM                  – Memoria dual-port para A/B (16-bit) y C (32-bit).
+//       2. systolic_neural_core  – Prefetch → NPU → Commit con performance counters.
+//       3. perf_monitor          – Congela y expone los contadores tras commit.
+//       4. JTAG Interface        – Interfaz externa para acceder a registros.
+//
+//   • Flujo de control externamente gobernado por:
+//       – matrices_loaded : flag que indica A/B cargadas en MRAM.
+//       – prefetch_start  : pulso 1-clk para iniciar lectura de A/B.
+//       – commit_start    : pulso 1-clk para iniciar escritura de C.
+//       – use_relu        : flag para habilitar el uso del ReLU.
+//
+//   • Handshake MRAM:
+//       – 16-bit port: re16, mat_sel, addr16 → solicitud; ready16, stall16 → respuesta.
+//       – 32-bit port: we32, addr32, din32 → solicitud; ready32, stall32 → respuesta.
+//
+//   • Estado y señales clave:
+//       – busy            : ‘1’ mientras el NPU está computando.
+//       – done            : pulso 1-clk al completar matriz C.
+//       – result_stored   : pulso 1-clk tras escritura de C en MRAM.
+//       – perf_ready      : pulso 1-clk al completar el snapshot de contadores.
+//
+//   • Parámetros:
+//       – K : dimensión de las matrices (K×K) y profundidad de MAC.
+//       – P : ancho en bits de los contadores de performance.
+//------------------------------------------------------------------------------
+
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
@@ -23,6 +46,10 @@ module system_top #(
 	output logic [6:0] sseg_hex0,
     output logic rst_led
 );
+
+    //––– Señales de control de flujo –––
+    /* Vendria de un User JTAG Interface */
+    logic use_relu;         // habilita el uso del relu                 // [n] from UJI(?) to SNC (MtxPref) [y]
 
     //––– Señales de control externas (lectura) –––
     /* Esta vendrá del matrix_load_unit luego de revisar que se han cargado las matrices */
@@ -77,6 +104,9 @@ module system_top #(
     ) SNC (
         .clk                (clk),
         .rst                (rst),
+
+        // Control de flujo
+        .use_relu           (use_relu),
 
         // Control externo (lectura)
         .matrices_loaded    (matrices_loaded),

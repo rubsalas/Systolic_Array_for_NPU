@@ -9,20 +9,22 @@
 //       – pe_accum_count[P-bits]   : número de bloques resultantes emitidos.
 //       – total_*                  : agregados de todos los PEs.
 //   • Entradas externas:
-//       – clk, rst: reloj y reset global.
-//       – a_col0[0‥K-1]  : palabra de 16 bits que inicia cada columna de A.
-//       – b_row0[0‥K-1]  : palabra de 16 bits que inicia cada fila de B.
-//       – valid_in[0‥K-1]: pulso de validez que se mantiene K ciclos para 
-//                         arrancar cada banda vertical.
+//       – clk, rst               : reloj y reset global.
+//       – a_col0[0‥K-1]          : palabra de 16 bits que inicia cada columna de A.
+//       – b_row0[0‥K-1]          : palabra de 16 bits que inicia cada fila de B.
+//       – valid_in[0‥K-1]        : pulso de validez que se mantiene K ciclos para 
+//                                 arrancar cada banda vertical.
+//       – use_relu               : habilita aplicación de ReLU (1) o bypass (0).
 //   • Salidas:
-//       – c_mat[0‥K-1][0‥K-1] : matriz de resultados 32 bits.
-//       – c_valid             : pulso por banda indicando que c_mat es válido.
-//       – pe_*_count          : counters individuales por PE.
-//       – total_*_count       : counters agregados.
+//       – c_mat[0‥K-1][0‥K-1]    : matriz de resultados 32 bits.
+//       – c_valid                : pulso por banda indicando que c_mat es válido.
+//       – pe_*_count             : contadores individuales por PE.
+//       – total_*_count          : contadores agregados.
 //   Parametrización:
 //       parameter K : dimensión de la malla (PEs = K×K) y profundidad de MAC.
 //       parameter P : anchura en bits de los performance counters.
 //------------------------------------------------------------------------------
+
 
 `timescale 1ns/1ps
 import pkg_systolic::*;
@@ -31,28 +33,29 @@ module systolic_array #(
     parameter int K = 4,            // tamaño de la malla (PEs = M×M)
     parameter int P = 32            // cantidad de bits para perf. counters
 )(
-    input  logic                    clk,
-    input  logic                    rst,
+    input  logic         clk,
+    input  logic         rst,
 
     // Bordes de entrada (1 palabra por ciclo)
-    input  s16_t                    a_col0 [0:K-1],          // columna de A
-    input  s16_t                    b_row0 [0:K-1],          // fila de B
+    input  s16_t         a_col0 [0:K-1],                // columna de A
+    input  s16_t         b_row0 [0:K-1],                // fila de B
     /* valid_in se pone a 1 exactamente K ciclos por cada banda vertical se quiera procesar. */
-    input  logic                    valid_in [0:K-1],        // habilita stream
+    input  logic         valid_in [0:K-1],              // habilita stream
+    input  logic         use_relu,                      // habilita el uso del relu
 
     // Resultados
-    output s32_t                    c_mat [0:K-1][0:K-1],    // matriz C
-    output logic                    c_valid,                 // pulso banda
+    output s32_t         c_mat [0:K-1][0:K-1],          // matriz C
+    output logic         c_valid,                       // pulso banda
 
     // Performance counters por PE
-    output logic [P-1:0]             pe_mult_count [0:K-1][0:K-1],
-    output logic [P-1:0]             pe_sum_count  [0:K-1][0:K-1],
-    output logic [P-1:0]             pe_accum_count[0:K-1][0:K-1],
+    output logic [P-1:0] pe_mult_count [0:K-1][0:K-1],
+    output logic [P-1:0] pe_sum_count  [0:K-1][0:K-1],
+    output logic [P-1:0] pe_accum_count[0:K-1][0:K-1],
 
     // Performance counters totales agregados
-    output logic [P-1:0]             total_mult_count,
-    output logic [P-1:0]             total_sum_count,
-    output logic [P-1:0]             total_accum_count
+    output logic [P-1:0] total_mult_count,
+    output logic [P-1:0] total_sum_count,
+    output logic [P-1:0] total_accum_count
 );
 
     // Wires temporales para capturar counters de cada PE
@@ -104,6 +107,7 @@ module systolic_array #(
                         .a_in      (a_bus[i][j]),
                         .b_in      (b_bus[i][j]),
                         .valid_in  (v_bus[i][j]),
+                        .use_relu  (use_relu),
                         .a_out     (a_bus[i][j+1]),
                         .b_out     (b_bus[i+1][j]),
                         .valid_out (v_bus[i][j+1]),
@@ -122,6 +126,7 @@ module systolic_array #(
                         .a_in      (a_bus[i][j]),
                         .b_in      (b_bus[i][j]),
                         .valid_in  (v_bus[i][j]),
+                        .use_relu  (use_relu),
                         .a_out     (a_bus[i][j+1]),
                         .b_out     (b_bus[i+1][j]),
                         .valid_out (v_bus[i][j+1]),

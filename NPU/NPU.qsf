@@ -140,6 +140,8 @@ set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/systolic_neural_core/tb
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_systolic_neural_core -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_systolic_neural_core
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_systolic_neural_core -section_id tb_systolic_neural_core
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/performance_monitor/performance_monitor.sv
+set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/muxes/mux_2NtoN.sv
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_pe.sv -section_id tb_pe
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/tb/tb_systolic_array.sv -section_id tb_systolic_array
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/tb/tb_npu.sv -section_id tb_npu

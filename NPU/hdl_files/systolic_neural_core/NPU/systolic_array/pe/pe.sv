@@ -2,8 +2,8 @@
 // pe.sv  –  Processing Element (dataflow: Output-Stationary) con Performance Counters
 //
 //   • Registra A y B un ciclo, los re-envía y los multiplica.
-//   • El producto se acumula durante K ciclos; al siguiente ciclo se pasa
-//     por ReLU y se emite c_out con c_valid=1.
+//   • El producto se acumula durante K ciclos; al siguiente ciclo se aplica
+//     opcionalmente ReLU y se emite c_out con c_valid=1.
 //   • Un ciclo después el ACC se limpia automáticamente.
 //   • Performance counters:
 //       - perf_mult_count  : número de multiplicaciones realizadas.
@@ -15,9 +15,10 @@
 //     a_in            : operando A que llega de la izquierda.
 //     b_in            : operando B que llega desde arriba.
 //     valid_in        : pulso de validez asociado a a_in, b_in.
+//     use_relu        : habilita la aplicación de ReLU (1) o bypass (0).
 //     a_out, b_out    : operandos reenviados (shift) a derecha / abajo.
 //     valid_out       : validez propagada.
-//     c_out           : resultado ReLU (32 bits).
+//     c_out           : resultado (ReLU o acumulador) de 32 bits.
 //     c_valid         : pulso 1-clk, coincide con ciclo en que c_out es válido.
 //     perf_mult_count : contador de multiplicaciones.
 //     perf_sum_count  : contador de sumas en el acumulador.
@@ -37,6 +38,9 @@ module pe #(
     input  s16_t  a_in,
     input  s16_t  b_in,
     input  logic  valid_in,
+
+    // ReLU control bit
+    input  logic  use_relu,         //  1 = aplicar ReLU, 0 = bypass
 
     output s16_t  a_out,
     output s16_t  b_out,
@@ -139,6 +143,26 @@ module pe #(
         .v_out (relu_valid)
     );
 
+    //----------------------------------------------------------------------
+    // 4.5 Señal unificada de dato y validez resultante
+    //----------------------------------------------------------------------
+    logic result_valid;
+    // Si use_relu=1, esperamos relu_valid; si =0, last_prod
+    assign result_valid = use_relu ? relu_valid : last_prod;
+
+    // Cable para el dato multiplexado
+    s32_t result_data;
+
+    // Instancia del MUX parametrizable (32 bits)
+    mux_2NtoN #(.N(ACC_W)) mux_result (
+        .I0   (acc_val),       // bypass: acumulador directo
+        .I1   (relu_out),      // ReLU
+        .rst  (rst),           // si reset, sale 0
+        .S    (use_relu),      // select: 0=bypass, 1=ReLU
+        .en   (result_valid),  // habilita sólo cuando hay dato válido
+        .O    (result_data)    // salida multiplexada
+    );
+
     // -------------------------------------------------------------------------
     // 5. Registro “hold” – mantiene el resultado final hasta el START siguiente
     // -------------------------------------------------------------------------
@@ -149,17 +173,16 @@ module pe #(
     logic start_next;
     assign start_next = valid_in & ~v_reg;   // v_reg = valid_in retardado 1 ciclo
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             c_hold   <= '0;
             have_res <= 1'b0;
         end
-        // Captura justo cuando ReLU entrega su dato válido
-        else if (relu_valid) begin
-            c_hold   <= relu_out;
+        else if (result_valid) begin
+            // captura el dato multiplexado
+            c_hold   <= result_data;
             have_res <= 1'b1;
         end
-        // Limpia al comenzar el siguiente bloque (valid vuelve a 1)
         else if (start_next) begin
             c_hold   <= '0;
             have_res <= 1'b0;

@@ -24,6 +24,8 @@ module tb_pe;
     s16_t b_in;
     logic valid_in;
 
+    logic use_relu;
+
     s16_t a_out;
     s16_t b_out;
     logic valid_out;
@@ -45,6 +47,7 @@ module tb_pe;
         .a_in               (a_in),
         .b_in               (b_in),
         .valid_in           (valid_in),
+        .use_relu           (use_relu),
 
         .a_out              (a_out),
         .b_out              (b_out),
@@ -63,6 +66,8 @@ module tb_pe;
     logic last_prod;
     s32_t relu_out;
     logic relu_valid;
+    logic result_valid;
+    s32_t result_data;
     s32_t c_hold;
     logic have_res;
     logic start_next;
@@ -77,6 +82,7 @@ module tb_pe;
 		valid_in = 1'b0;
 		a_in = 0;
 		b_in = 0;
+		use_relu = 1'b0;
     end
 
     // Clock
@@ -89,6 +95,8 @@ module tb_pe;
         last_prod = uut.last_prod;
         relu_out = uut.relu_out;
         relu_valid = uut.relu_valid;
+        result_valid = uut.result_valid;
+        result_data = uut.result_data;
         c_hold = uut.c_hold;
         have_res = uut.have_res;
         start_next = uut.start_next;
@@ -114,15 +122,17 @@ module tb_pe;
 
         @(posedge clk);
 
+        use_relu = 1'b1;
+
         // Suma 1/4
-		valid_in = 1;
+		valid_in = 1'b1;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
         a_in = 2; 
         b_in = 5; 
 
-        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
-                 $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
+        $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d use_relu=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
+                 $time, a_in, b_in, valid_in, use_relu, a_out, b_out, valid_out, c_out, c_valid); 
 	 
         @(posedge clk);
 
@@ -142,8 +152,8 @@ module tb_pe;
 		valid_in = 1;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
-        a_in = 0; 
-        b_in = 8; 
+        a_in = 3; 
+        b_in = -8; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
                  $time, a_in, b_in, valid_in, a_out, b_out, valid_out, c_out, c_valid); 
@@ -192,6 +202,8 @@ module tb_pe;
 	 
         @(posedge clk);
 
+        use_relu = 1'b0;
+
         // Suma 1/4
 		valid_in = 1;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
@@ -232,7 +244,7 @@ module tb_pe;
 		valid_in = 1;
         // a_in  = $urandom_range(RANGE * 2) - RANGE; 
         // b_in  = $urandom_range(RANGE * 2) - RANGE;
-        a_in = 6;
+        a_in = -6;
         b_in = 3; 
 
         $display("[%0t] a_in=%0d b_in=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",

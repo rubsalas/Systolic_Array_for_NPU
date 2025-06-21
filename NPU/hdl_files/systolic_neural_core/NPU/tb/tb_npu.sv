@@ -34,13 +34,14 @@ module tb_npu;
     logic rst;
 	
     // Interfaz al UUT
-    s16_t a_mat [0:K-1][0:K-1];   // matriz A
-    s16_t b_mat [0:K-1][0:K-1];   // matriz B
+    s16_t a_mat [0:K-1][0:K-1];     // matriz A
+    s16_t b_mat [0:K-1][0:K-1];     // matriz B
+    logic use_relu;                 // habilita el uso del relu
 	logic start;
 
     logic busy;
     logic done;
-    s32_t c_mat [0:K-1][0:K-1];   // matriz C
+    s32_t c_mat [0:K-1][0:K-1];     // matriz C
 
     // Performance counters por PE
     logic [P-1:0] pe_mult_count [0:K-1][0:K-1];
@@ -59,6 +60,7 @@ module tb_npu;
         .rst                (rst),
         .a_mat              (a_mat),
         .b_mat              (b_mat),
+        .use_relu           (use_relu),
         .start              (start),
         .busy               (busy),
         .done               (done),
@@ -93,6 +95,7 @@ module tb_npu;
 		clk = 1'b1;
         rst = 1'b0;
 
+        use_relu = 1'b0;
 		start = 1'b0;
         a_mat = '{
             '{  0,  0,  0,  0  },
@@ -137,8 +140,7 @@ module tb_npu;
 
         @(posedge clk);
 
-        start = 1'b1;
-
+        /* Not Using ReLU */
         a_mat = '{
             '{  2,  -1,  0,  6  },
             '{  -7,  5,  6,  -4  },
@@ -152,6 +154,9 @@ module tb_npu;
             '{  1,  3,  -5,  2  }
         };
 
+        use_relu = 1'b0;
+        start = 1'b1;
+
         @(posedge clk);
 
         start = 1'b0;
@@ -161,8 +166,7 @@ module tb_npu;
 
         @(posedge clk);
 
-        start = 1'b1;
-
+        /* Using ReLU */
         a_mat = '{
             '{  6,  3,  -1,  0  },
             '{  7,  -5,  2,  4  },
@@ -175,6 +179,9 @@ module tb_npu;
             '{  -6,  1,  3,  9  },
             '{  0,  -3,  5,  8  }
         };
+
+        use_relu = 1'b1;
+        start = 1'b1;
 
         @(posedge clk);
 

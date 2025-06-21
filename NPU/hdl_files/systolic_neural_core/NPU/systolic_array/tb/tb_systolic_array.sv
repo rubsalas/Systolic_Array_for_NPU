@@ -57,6 +57,7 @@ module tb_systolic_array;
         .valid_out  (data_validity)
     );
 
+    logic use_relu;                 // habilita el uso del relu
     // Resultado global
     logic c_valid;                  // pulso por banda C
     s32_t c_mat [0:K-1][0:K-1];     // matriz resultante
@@ -78,6 +79,7 @@ module tb_systolic_array;
         .a_col0             (a_col0),
         .b_row0             (b_row0),
         .valid_in           (data_validity),
+        .use_relu           (use_relu),
         .c_mat              (c_mat),
         .c_valid            (c_valid),
         .pe_mult_count      (pe_mult_count),
@@ -116,6 +118,7 @@ module tb_systolic_array;
         };
 
 		valid_in = 1'b0;
+		use_relu = 1'b0;
     end
 
     // Clock
@@ -150,6 +153,7 @@ module tb_systolic_array;
         @(posedge clk);
 
         valid_in = 1'b1;
+        use_relu = 1'b1;
 
         a_mat = '{
             '{  2,  -1,  0,  6  },   // fila 0
@@ -175,7 +179,9 @@ module tb_systolic_array;
 
         @(posedge clk);
 
+        /* NO RELU */
         valid_in = 1'b1;
+        use_relu = 1'b0;
 
         a_mat = '{
             '{  6,  3,  -1,  0  },
