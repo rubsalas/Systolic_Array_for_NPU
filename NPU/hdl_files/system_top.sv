@@ -41,13 +41,13 @@ module system_top #(
 
     //––– Arithmetic Op. Performance Counters (via NPU) –––
     // Performance counters por PE
-    logic [P-1:0] pe_mult_count [0:K-1][0:K-1];
-    logic [P-1:0] pe_sum_count  [0:K-1][0:K-1];
-    logic [P-1:0] pe_accum_count[0:K-1][0:K-1];
+    logic [P-1:0] pe_mult_count [0:K-1][0:K-1];                         // [y] from SNC to PM [y]
+    logic [P-1:0] pe_sum_count  [0:K-1][0:K-1];                         // [y] from SNC to PM [y]
+    logic [P-1:0] pe_accum_count[0:K-1][0:K-1];                         // [y] from SNC to PM [y]
     // Performance counters totales agregados
-    logic [P-1:0] total_mult_count;
-    logic [P-1:0] total_sum_count;
-    logic [P-1:0] total_accum_count;
+    logic [P-1:0] total_mult_count;                                     // [y] from SNC to PM [y]
+    logic [P-1:0] total_sum_count;                                      // [y] from SNC to PM [y]
+    logic [P-1:0] total_accum_count;                                    // [y] from SNC to PM [y]
 
     //--- Señales internas para la MRAM (puerto A/B de 16 bits y C de 32 bits) ---
     // Puertos de 16 bits
@@ -117,14 +117,14 @@ module system_top #(
     );
 
     // Memory Access Performance counters
-    logic [P-1:0] read16_count;           // lecturas 16-bit completadas
-    logic [P-1:0] write16_count;          // escrituras 16-bit completadas
-    logic [P-1:0] read32_count;           // lecturas 32-bit completadas
-    logic [P-1:0] write32_count;          // escrituras 32-bit completadas
-    logic [P-1:0] bits_read_16_count;     // bits leídos (16 por lectura)
-    logic [P-1:0] bits_written_16_count;  // bits escritos (16 por escritura)
-    logic [P-1:0] bits_read_32_count;     // bits leídos (32 por lectura)
-    logic [P-1:0] bits_written_32_count;  // bits escritos (32 por escritura)
+    logic [P-1:0] read16_count;           // lecturas 16-bit completadas        // [y] from MRAM to PM [y]
+    logic [P-1:0] write16_count;          // escrituras 16-bit completadas      // [y] from MRAM to PM [y]
+    logic [P-1:0] read32_count;           // lecturas 32-bit completadas        // [y] from MRAM to PM [y]
+    logic [P-1:0] write32_count;          // escrituras 32-bit completadas      // [y] from MRAM to PM [y]
+    logic [P-1:0] bits_read_16_count;     // bits leídos (16 por lectura)       // [y] from MRAM to PM [y]
+    logic [P-1:0] bits_written_16_count;  // bits escritos (16 por escritura)   // [y] from MRAM to PM [y]
+    logic [P-1:0] bits_read_32_count;     // bits leídos (32 por lectura)       // [y] from MRAM to PM [y]
+    logic [P-1:0] bits_written_32_count;  // bits escritos (32 por escritura)   // [y] from MRAM to PM [y]
 
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
@@ -163,6 +163,76 @@ module system_top #(
         .bits_written_16_count  (bits_written_16_count),
         .bits_read_32_count     (bits_read_32_count),
         .bits_written_32_count  (bits_written_32_count)
+    );
+
+    // Performance counter snapshots
+    logic [P-1:0] snap_read16_count;
+    logic [P-1:0] snap_write16_count;
+    logic [P-1:0] snap_read32_count;
+    logic [P-1:0] snap_write32_count;
+    logic [P-1:0] snap_bits_read_16_count;
+    logic [P-1:0] snap_bits_written_16_count;
+    logic [P-1:0] snap_bits_read_32_count;
+    logic [P-1:0] snap_bits_written_32_count;
+
+    logic [P-1:0] snap_pe_mult_count  [0:K-1][0:K-1];
+    logic [P-1:0] snap_pe_sum_count   [0:K-1][0:K-1];
+    logic [P-1:0] snap_pe_accum_count [0:K-1][0:K-1];
+    logic [P-1:0] snap_total_mult_count;
+    logic [P-1:0] snap_total_sum_count;
+    logic [P-1:0] snap_total_accum_count;
+
+    logic         counters_ready;
+
+    //--------------------------------------------------------------------------
+    // Instancia de perf_monitor: congela y expone los counters
+    //--------------------------------------------------------------------------
+    performance_monitor #(
+        .K(K),
+        .P(P)
+    ) perf_monitor (
+        .clk                        (clk),
+        .rst                        (rst),
+        .commit_done                (result_stored),
+
+        // Contadores MRAM
+        .read16_count               (read16_count),
+        .write16_count              (write16_count),
+        .read32_count               (read32_count),
+        .write32_count              (write32_count),
+        .bits_read_16_count         (bits_read_16_count),
+        .bits_written_16_count      (bits_written_16_count),
+        .bits_read_32_count         (bits_read_32_count),
+        .bits_written_32_count      (bits_written_32_count),
+
+        // Contadores NPU agregados
+        .total_mult_count           (total_mult_count),
+        .total_sum_count            (total_sum_count),
+        .total_accum_count          (total_accum_count),
+
+        // Contadores individuales de PEs
+        .pe_mult_count              (pe_mult_count),
+        .pe_sum_count               (pe_sum_count),
+        .pe_accum_count             (pe_accum_count),
+
+        // Salidas snapshot
+        .snap_read16_count          (snap_read16_count),
+        .snap_write16_count         (snap_write16_count),
+        .snap_read32_count          (snap_read32_count),
+        .snap_write32_count         (snap_write32_count),
+        .snap_bits_read_16_count    (snap_bits_read_16_count),
+        .snap_bits_written_16_count (snap_bits_written_16_count),
+        .snap_bits_read_32_count    (snap_bits_read_32_count),
+        .snap_bits_written_32_count (snap_bits_written_32_count),
+
+        .snap_total_mult_count      (snap_total_mult_count),
+        .snap_total_sum_count       (snap_total_sum_count),
+        .snap_total_accum_count     (snap_total_accum_count),
+        .snap_pe_mult_count         (snap_pe_mult_count),
+        .snap_pe_sum_count          (snap_pe_sum_count),
+        .snap_pe_accum_count        (snap_pe_accum_count),
+
+        .counters_ready             (counters_ready)
     );
 
 

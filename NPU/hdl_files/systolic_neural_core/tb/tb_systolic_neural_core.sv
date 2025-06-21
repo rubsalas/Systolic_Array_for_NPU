@@ -187,7 +187,7 @@ module tb_systolic_neural_core;
 
     // Initialize inputs
     initial begin
-		$display("\Systolic Neural Core module testbench:\n");
+		$display("\nSystolic Neural Core module testbench:\n");
 
 		clk = 1'b1;
         rst = 1'b0;
