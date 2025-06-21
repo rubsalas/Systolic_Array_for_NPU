@@ -70,6 +70,9 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_npu -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_npu
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_npu -section_id tb_npu
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_mram -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_mram
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_mram -section_id tb_mram
 set_location_assignment PIN_AF14 -to clk
 set_location_assignment PIN_AB12 -to rst
 set_location_assignment PIN_AD27 -to sseg_hex1[6]
@@ -140,5 +143,6 @@ set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_systolic_neural_core -
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_pe.sv -section_id tb_pe
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/tb/tb_systolic_array.sv -section_id tb_systolic_array
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/tb/tb_npu.sv -section_id tb_npu
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/memory/tb/tb_mram.sv -section_id tb_mram
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/tb/tb_systolic_neural_core.sv -section_id tb_systolic_neural_core
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -75,37 +75,37 @@ module system_top #(
         .K(K),
         .P(P)
     ) SNC (
-        .clk             (clk),
-        .rst             (rst),
+        .clk                (clk),
+        .rst                (rst),
 
         // Control externo (lectura)
-        .matrices_loaded (matrices_loaded),
-        .prefetch_start  (prefetch_start),
+        .matrices_loaded    (matrices_loaded),
+        .prefetch_start     (prefetch_start),
 
         // MRAM 16-bit interface
-        .dout16          (dout16),
-        .ready16         (ready16),
-        .stall16         (stall16),
+        .dout16             (dout16),
+        .ready16            (ready16),
+        .stall16            (stall16),
 
-        .re16            (re16),
-        .mat_sel         (mat_sel),
-        .addr16          (addr16),
+        .re16               (re16),
+        .mat_sel            (mat_sel),
+        .addr16             (addr16),
 
         // Control externo (escritura)
-        .commit_start    (commit_start),
+        .commit_start       (commit_start),
 
         // MRAM 32-bit interface
-        .ready32         (ready32),
-        .stall32         (stall32),
+        .ready32            (ready32),
+        .stall32            (stall32),
 
-        .we32            (we32),
-        .addr32          (addr32),
-        .din32           (din32),
+        .we32               (we32),
+        .addr32             (addr32),
+        .din32              (din32),
 
         // Status
-        .npu_busy        (npu_busy),
-        .npu_done        (npu_done),
-        .result_stored   (result_stored),
+        .npu_busy           (npu_busy),
+        .npu_done           (npu_done),
+        .result_stored      (result_stored),
 
         // Arithmetic Op. Performance counters
         .pe_mult_count      (pe_mult_count),
@@ -116,33 +116,53 @@ module system_top #(
         .total_accum_count  (total_accum_count)
     );
 
+    // Memory Access Performance counters
+    logic [P-1:0] read16_count;           // lecturas 16-bit completadas
+    logic [P-1:0] write16_count;          // escrituras 16-bit completadas
+    logic [P-1:0] read32_count;           // lecturas 32-bit completadas
+    logic [P-1:0] write32_count;          // escrituras 32-bit completadas
+    logic [P-1:0] bits_read_16_count;     // bits leídos (16 por lectura)
+    logic [P-1:0] bits_written_16_count;  // bits escritos (16 por escritura)
+    logic [P-1:0] bits_read_32_count;     // bits leídos (32 por lectura)
+    logic [P-1:0] bits_written_32_count;  // bits escritos (32 por escritura)
+
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
     //--------------------------------------------------------------------------
     MRAM #(
-        .K(K)
+        .K(K),
+        .P(P)
     ) mram (
-        .clk     (clk),
-        .rst     (rst),
+        .clk                    (clk),
+        .rst                    (rst),
         // Puerto A/B de 16 bits
-        .we16    (we16),        // 1→din16→mem[mat_sel?B:A][addr16]
-        .re16    (re16),        // 1→mem[mat_sel?B:A][addr16]→dout16
-        .mat_sel (mat_sel),     // 0=A, 1=B
-        .addr16  (addr16),      // índice fila-major 0…K*K–1
-        .din16   (din16),       // dato de entrada
+        .we16                   (we16),        // 1→din16→mem[mat_sel?B:A][addr16]
+        .re16                   (re16),        // 1→mem[mat_sel?B:A][addr16]→dout16
+        .mat_sel                (mat_sel),     // 0=A, 1=B
+        .addr16                 (addr16),      // índice fila-major 0…K*K–1
+        .din16                  (din16),       // dato de entrada
 
-        .dout16  (dout16),      // dato de salida
-        .ready16 (ready16),     // 1-clk cuando la operación acaba
-        .stall16 (stall16),     // 1 mientras la memoria no esté lista
+        .dout16                 (dout16),      // dato de salida
+        .ready16                (ready16),     // 1-clk cuando la operación acaba
+        .stall16                (stall16),     // 1 mientras la memoria no esté lista
         // Puerto C de 32 bits
-        .we32    (we32),        // 1→din32→memC[addr32]
-        .re32    (re32),        // 1→memC[addr32]→dout32
-        .addr32  (addr32),      // índice fila-major 0…K*K–1
-        .din32   (din32),       // dato de entrada
+        .we32                   (we32),        // 1→din32→memC[addr32]
+        .re32                   (re32),        // 1→memC[addr32]→dout32
+        .addr32                 (addr32),      // índice fila-major 0…K*K–1
+        .din32                  (din32),       // dato de entrada
 
-        .dout32  (dout32),      // dato de salida
-        .ready32 (ready32),     // 1-clk cuando la operación acaba
-        .stall32 (stall32)      // 1 mientras la memoria no esté lista
+        .dout32                 (dout32),      // dato de salida
+        .ready32                (ready32),     // 1-clk cuando la operación acaba
+        .stall32                (stall32),     // 1 mientras la memoria no esté lista
+        // Memory Access Performance counters
+        .read16_count           (read16_count),
+        .write16_count          (write16_count),
+        .read32_count           (read32_count),
+        .write32_count          (write32_count),
+        .bits_read_16_count     (bits_read_16_count),
+        .bits_written_16_count  (bits_written_16_count),
+        .bits_read_32_count     (bits_read_32_count),
+        .bits_written_32_count  (bits_written_32_count)
     );
 
 

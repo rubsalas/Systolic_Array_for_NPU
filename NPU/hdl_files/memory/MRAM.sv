@@ -1,19 +1,43 @@
-//==============================================================================
-// matrix_memory.sv
 //------------------------------------------------------------------------------
-// Módulo de memoria sencillo de doble puerto (abstrae BRAMs/XRAMs en FPGA).
-// - Almacena dos matrices de entrada (A y B) de K×K palabras de 16 bits.
-// - Almacena una matriz de salida (C) de K×K palabras de 32 bits.
-// - Puerto A/B (16 bits): permite escribir o leer A o B según `mat_sel`.
-// - Puerto C   (32 bits): permite escribir o leer la matriz C de resultados.
-// - Señales `readyX` indican cuándo finaliza la operación;
-//   `stallX` es el complementario para back-pressure.
-//==============================================================================
+// MRAM.sv  –  Memoria MRAM dual-port para matrices A/B (16 bit) y C (32 bit)
+//
+//   • Bancos internos:
+//       – memA, memB: K×K palabras de 16 bit para matrices A y B.
+//       – memC       : K×K palabras de 32 bit para matriz C.
+//
+//   • Puertos de acceso (handshake “ready/stall”):
+//       – Puerto A/B (16 bit):
+//           • we16     : habilita escritura de din16 en memA/B[addr16].
+//           • re16     : habilita lectura de memA/B[addr16] → dout16.
+//           • ready16  : pulso 1 clk cuando termina we16 o re16.
+//           • stall16  : 1 mientras ready16=0.
+//       – Puerto C (32 bit):
+//           • we32     : habilita escritura de din32 en memC[addr32].
+//           • re32     : habilita lectura de memC[addr32] → dout32.
+//           • ready32  : pulso 1 clk cuando termina we32 o re32.
+//           • stall32  : 1 mientras ready32=0.
+//
+//   • Performance counters (anchura P bits):
+//       – read16_count          : número de lecturas 16 bit completadas.
+//       – write16_count         : número de escrituras 16 bit completadas.
+//       – read32_count          : número de lecturas 32 bit completadas.
+//       – write32_count         : número de escrituras 32 bit completadas.
+//       – bits_read_16_count    : total de bits leídos (+=16 por lectura 16 bit).
+//       – bits_written_16_count : total de bits escritos (+=16 por escritura 16 bit).
+//       – bits_read_32_count    : total de bits leídos (+=32 por lectura 32 bit).
+//       – bits_written_32_count : total de bits escritos (+=32 por escritura 32 bit).
+//
+//   Parámetros:
+//     K : dimensión de las matrices (K×K).
+//     P : ancho en bits de los contadores de performance.
+//
+//------------------------------------------------------------------------------
 `timescale 1ns/1ps
 import pkg_systolic::*;
 
 module MRAM #(
-    parameter int K = 4             // dimensión de cada matriz (K×K)
+    parameter int K = 4,            // dimensión de matriz (K×K)
+    parameter int P = 32            // cantidad de bits para perf. counters
 )(
     input  logic        clk,
     input  logic        rst,
@@ -39,11 +63,21 @@ module MRAM #(
     input  s32_t        din32,      // datos a escribir en memC
     output s32_t        dout32,     // datos leídos de memC
     output logic        ready32,    // 1-clk cuando finaliza we32 o re32
-    output logic        stall32     // 1 mientras no esté listo (ready32=0)
+    output logic        stall32,    // 1 mientras no esté listo (ready32=0)
+
+    // Performance counters
+    output logic [P-1:0]            read16_count,           // lecturas 16-bit completadas
+    output logic [P-1:0]            write16_count,          // escrituras 16-bit completadas
+    output logic [P-1:0]            read32_count,           // lecturas 32-bit completadas
+    output logic [P-1:0]            write32_count,          // escrituras 32-bit completadas
+    output logic [P-1:0]            bits_read_16_count,     // bits leídos (16 por lectura)
+    output logic [P-1:0]            bits_written_16_count,  // bits escritos (16 por escritura)
+    output logic [P-1:0]            bits_read_32_count,     // bits leídos (32 por lectura)
+    output logic [P-1:0]            bits_written_32_count   // bits escritos (32 por escritura)
 );
 
     //--------------------------------------------------------------------------
-    // Bancos de memoria interna (synthé en BRAMs o LUT-RAMs)
+    // Bancos de memoria interna
     //--------------------------------------------------------------------------
     s16_t memA [0:K*K-1];  // Banco A: K*K elementos de 16 bits
     s16_t memB [0:K*K-1];  // Banco B: K*K elementos de 16 bits
@@ -119,5 +153,64 @@ module MRAM #(
     assign dout32  = dout32_reg;    // dato leído de 32 bits
     assign stall16 = ~ready16;      // 1 mientras no esté listo
     assign stall32 = ~ready32;      // 1 mientras no esté listo
+
+
+    //-------------- Performance counters ------------
+    logic read16_pend, write16_pend;
+    logic read32_pend, write32_pend;
+
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            // Flags de pending
+            read16_pend   <= 1'b0;
+            write16_pend  <= 1'b0;
+            read32_pend   <= 1'b0;
+            write32_pend  <= 1'b0;
+            // Contadores
+            read16_count          <= '0;
+            write16_count         <= '0;
+            read32_count          <= '0;
+            write32_count         <= '0;
+            bits_read_16_count    <= '0;
+            bits_written_16_count <= '0;
+            bits_read_32_count    <= '0;
+            bits_written_32_count <= '0;
+        end else begin
+            // Captura la solicitud cuando re16/we16 se activa
+            if (re16)
+                read16_pend  <= 1'b1;
+            if (we16)
+                write16_pend <= 1'b1;
+
+            // Cuando ready16 llega y había una request pendiente, contamos
+            if (ready16 && read16_pend) begin
+                read16_count          <= read16_count + 1;
+                bits_read_16_count    <= bits_read_16_count + 16;
+                read16_pend           <= 1'b0;
+            end
+            if (ready16 && write16_pend) begin
+                write16_count         <= write16_count + 1;
+                bits_written_16_count <= bits_written_16_count + 16;
+                write16_pend          <= 1'b0;
+            end
+
+            // Análogamente para 32 bits
+            if (re32)
+                read32_pend  <= 1'b1;
+            if (we32)
+                write32_pend <= 1'b1;
+
+            if (ready32 && read32_pend) begin
+                read32_count          <= read32_count + 1;
+                bits_read_32_count    <= bits_read_32_count + 32;
+                read32_pend           <= 1'b0;
+            end
+            if (ready32 && write32_pend) begin
+                write32_count         <= write32_count + 1;
+                bits_written_32_count <= bits_written_32_count + 32;
+                write32_pend          <= 1'b0;
+            end
+        end
+    end
 
 endmodule

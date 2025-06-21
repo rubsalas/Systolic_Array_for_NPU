@@ -125,11 +125,22 @@ module tb_systolic_neural_core;
         .total_accum_count  (total_accum_count)
     );
 
+    // Performance counters
+    logic [P-1:0] read16_count;           // lecturas 16-bit completadas
+    logic [P-1:0] write16_count;          // escrituras 16-bit completadas
+    logic [P-1:0] read32_count;           // lecturas 32-bit completadas
+    logic [P-1:0] write32_count;          // escrituras 32-bit completadas
+    logic [P-1:0] bits_read_16_count;     // bits leídos (16 por lectura)
+    logic [P-1:0] bits_written_16_count;  // bits escritos (16 por escritura)
+    logic [P-1:0] bits_read_32_count;     // bits leídos (32 por lectura)
+    logic [P-1:0] bits_written_32_count;  // bits escritos (32 por escritura)
+
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
     //--------------------------------------------------------------------------
     MRAM #(
-        .K(K)
+        .K(K),
+        .P(P)
     ) mram (
         .clk     (clk),
         .rst     (rst),
@@ -151,7 +162,16 @@ module tb_systolic_neural_core;
 
         // .dout32  (dout32),      // dato de salida
         .ready32 (ready32),     // 1-clk cuando la operación acaba
-        .stall32 (stall32)      // 1 mientras la memoria no esté lista
+        .stall32 (stall32),      // 1 mientras la memoria no esté lista
+        // Performance Counters
+        .read16_count           (read16_count),
+        .write16_count          (write16_count),
+        .read32_count           (read32_count),
+        .write32_count          (write32_count),
+        .bits_read_16_count     (bits_read_16_count),
+        .bits_written_16_count  (bits_written_16_count),
+        .bits_read_32_count     (bits_read_32_count),
+        .bits_written_32_count  (bits_written_32_count)
     );
 
     // inner wiring MRAM
@@ -234,7 +254,7 @@ module tb_systolic_neural_core;
         // --- espera a que el NPU active el busy ---
         wait(npu_busy);
 
-        $display("[%0t] a_mat=%0p b_mat=%0p",
+        $display("[%0t] a_mat = %0p \nb_mat = %0p",
                  $time, a_mat, b_mat); 
 	 
         // $display("[%0t] a_mat=%0d b_mat=%0d valid_in=%0d a_out=%0d b_out=%0d valid_out=%0d c_out=%0d c_valid=%0d",
@@ -243,7 +263,7 @@ module tb_systolic_neural_core;
         // --- espera a que el NPU active el ready ---
         wait(npu_done);
 
-        $display("[%0t] c_mat=%0p",
+        $display("[%0t] c_mat = %0p",
                  $time, c_mat); 
 
 
@@ -259,7 +279,7 @@ module tb_systolic_neural_core;
         // --- espera a que se termine de escribir en MRAM ---
         wait(result_stored);
 
-        $display("[%0t] memC=%0p",
+        $display("[%0t] memC = %0p",
                  $time, memC); 
         
 

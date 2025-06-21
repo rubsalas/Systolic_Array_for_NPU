@@ -19,6 +19,7 @@ module tb_mram;
 
     // Parámetros
     localparam int K        = 4;    // productos por celda
+    localparam int P        = 32;   // cantidad de bits para perf. counters
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
     // localparam int RANGE    = 10;   // rango de valores por usar
 
@@ -43,37 +44,62 @@ module tb_mram;
     logic ready32;
     logic stall32;
 
+    // Performance counters
+    logic [P-1:0] read16_count;           // lecturas 16-bit completadas
+    logic [P-1:0] write16_count;          // escrituras 16-bit completadas
+    logic [P-1:0] read32_count;           // lecturas 32-bit completadas
+    logic [P-1:0] write32_count;          // escrituras 32-bit completadas
+    logic [P-1:0] bits_read_16_count;     // bits leídos (16 por lectura)
+    logic [P-1:0] bits_written_16_count;  // bits escritos (16 por escritura)
+    logic [P-1:0] bits_read_32_count;     // bits leídos (32 por lectura)
+    logic [P-1:0] bits_written_32_count;  // bits escritos (32 por escritura)
+
     //--------------------------------------------------------------------------
     // Instancia de la MRAM: almacena A, B (16 bits) y C (32 bits)
     //--------------------------------------------------------------------------
     MRAM #(
-        .K (K)
+        .K (K),
+        .P(P)
     ) uut (
-        .clk     (clk),
-        .rst     (rst),
+        .clk                    (clk),
+        .rst                    (rst),
         // Puerto A/B de 16 bits
-        .we16    (we16),  // 1→din16→mem[mat_sel?B:A][addr16]
-        .re16    (re16),  // 1→mem[mat_sel?B:A][addr16]→dout16
-        .mat_sel (mat_sel),  // 0=A, 1=B
-        .addr16  (addr16),   // índice fila-major 0…K*K–1
-        .din16   (din16),  // dato de entrada
-        .dout16  (dout16),  // dato de salida
-        .ready16 (ready16),  // 1-clk cuando la operación acaba
-        .stall16 (stall16),  // 1 mientras la memoria no esté lista
+        .we16                   (we16),         // 1→din16→mem[mat_sel?B:A][addr16]
+        .re16                   (re16),         // 1→mem[mat_sel?B:A][addr16]→dout16
+        .mat_sel                (mat_sel),      // 0=A, 1=B
+        .addr16                 (addr16),       // índice fila-major 0…K*K–1
+        .din16                  (din16),        // dato de entrada
+        .dout16                 (dout16),       // dato de salida
+        .ready16                (ready16),      // 1-clk cuando la operación acaba
+        .stall16                (stall16),      // 1 mientras la memoria no esté lista
         // Puerto C de 32 bits
-        .we32    (we32),  // 1→din32→memC[addr32]
-        .re32    (re32),  // 1→memC[addr32]→dout32
-        .addr32  (addr32),   // índice fila-major 0…K*K–1
-        .din32   (din32),  // dato de entrada
-        .dout32  (dout32),  // dato de salida
-        .ready32 (ready32),  // 1-clk cuando la operación acaba
-        .stall32 (stall32)   // 1 mientras la memoria no esté lista
+        .we32                   (we32),         // 1→din32→memC[addr32]
+        .re32                   (re32),         // 1→memC[addr32]→dout32
+        .addr32                 (addr32),       // índice fila-major 0…K*K–1
+        .din32                  (din32),        // dato de entrada
+        .dout32                 (dout32),       // dato de salida
+        .ready32                (ready32),      // 1-clk cuando la operación acaba
+        .stall32                (stall32),      // 1 mientras la memoria no esté lista
+        // Performance Counters
+        .read16_count           (read16_count),
+        .write16_count          (write16_count),
+        .read32_count           (read32_count),
+        .write32_count          (write32_count),
+        .bits_read_16_count     (bits_read_16_count),
+        .bits_written_16_count  (bits_written_16_count),
+        .bits_read_32_count     (bits_read_32_count),
+        .bits_written_32_count  (bits_written_32_count)
     );
 
     // inner wiring
     s16_t memA [0:K*K-1];  // Banco A: K*K elementos de 16 bits
     s16_t memB [0:K*K-1];  // Banco B: K*K elementos de 16 bits
     s32_t memC [0:K*K-1];  // Banco C: K*K elementos de 32 bits
+
+    logic read16_pend;
+    logic write16_pend;
+    logic read32_pend;
+    logic write32_pend;
 
     // Initialize inputs
     initial begin
@@ -101,6 +127,12 @@ module tb_mram;
         memA = uut.memA;
         memB = uut.memB;
         memC = uut.memC;
+
+        read16_pend = uut.read16_pend;
+        write16_pend = uut.write16_pend;
+        read32_pend = uut.read32_pend;
+        write32_pend = uut.write32_pend;
+
     end
 
     // Variables de referencia
@@ -124,6 +156,13 @@ module tb_mram;
 
         @(posedge clk);
 
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
+
+        @(posedge clk);
+
         we16 = 1'b1;
         mat_sel = 1'b0;
         addr16 = 1;
@@ -131,10 +170,24 @@ module tb_mram;
 
         @(posedge clk);
 
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
+
+        @(posedge clk);
+
         we16 = 1'b1;
         mat_sel = 1'b0;
         addr16 = 2;
 		din16 = 0;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
 
         @(posedge clk);
         // Prueba de we16 = 0
@@ -149,6 +202,13 @@ module tb_mram;
         mat_sel = 1'b0;
         addr16 = 3;
 		din16 = 6;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
 
         @(posedge clk);
         // Prueba de we16 = 0
@@ -167,10 +227,24 @@ module tb_mram;
 
         @(posedge clk);
 
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
+
+        @(posedge clk);
+
         we16 = 1'b1;
         mat_sel = 1'b1;
         addr16 = 1;
 		din16 = 0;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
 
         @(posedge clk);
 
@@ -181,10 +255,24 @@ module tb_mram;
 
         @(posedge clk);
 
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
+
+        @(posedge clk);
+
         we16 = 1'b1;
         mat_sel = 1'b1;
         addr16 = 3;
 		din16 = -3;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        we16 = 1'b0;
 
         @(posedge clk);
         // Prueba de we16 = 0
@@ -202,9 +290,23 @@ module tb_mram;
 
         @(posedge clk);
 
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        we32 = 1'b0;
+
+        @(posedge clk);
+
         we32 = 1'b1;
         addr32 = 1;
 		din32 = 12;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        we32 = 1'b0;
 
         @(posedge clk);
         // Prueba de we32 = 0
@@ -219,10 +321,24 @@ module tb_mram;
 		din32 = 0;
 
         @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        we32 = 1'b0;
+
+        @(posedge clk);
         
         we32 = 1'b1;
         addr32 = 3;
 		din32 = 5;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        we32 = 1'b0;
 
         @(posedge clk);
         // Prueba de we32 = 0
@@ -238,9 +354,23 @@ module tb_mram;
 
         @(posedge clk);
 
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        re16 = 1'b0;
+
+        @(posedge clk);
+
         re16 = 1'b1;
         mat_sel = 1'b0;
         addr16 = 1;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        re16 = 1'b0;
 
         @(posedge clk);
         // Prueba de re16=0
@@ -255,10 +385,24 @@ module tb_mram;
         addr16 = 2;
 
         @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        re16 = 1'b0;
+
+        @(posedge clk);
         
         re16 = 1'b1;
         mat_sel = 1'b1;
         addr16 = 3;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready16);
+
+        re16 = 1'b0;
 
         @(posedge clk);
         // Prueba de re16=0
@@ -272,9 +416,23 @@ module tb_mram;
         addr32 = 0;
 
         @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        re32 = 1'b0;
+
+        @(posedge clk);
         
         re32 = 1'b1;
         addr32 = 1;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        re32 = 1'b0;
 
         @(posedge clk);
         // Prueba de re32=0
@@ -287,9 +445,23 @@ module tb_mram;
         addr32 = 2;
 
         @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        re32 = 1'b0;
+
+        @(posedge clk);
         
         re32 = 1'b1;
         addr32 = 3;
+
+        @(posedge clk);
+
+        // --- espera a que el NPU active el ready ---
+        wait(ready32);
+
+        re32 = 1'b0;
 
         @(posedge clk);
         // Prueba de re32=0
@@ -301,6 +473,6 @@ module tb_mram;
     end
 
     initial
-	#3500 $finish;    
+	#5500 $finish;    
 
 endmodule
