@@ -1,68 +1,46 @@
-//------------------------------------------------------------------------------
-// system_top.sv  –  Top-level integration of MRAM, Systolic Neural Core and Perf Monitor
-//
-//   • Integra los siguientes bloques:
-//       1. MRAM                  – Memoria dual-port para A/B (16-bit) y C (32-bit).
-//       2. systolic_neural_core  – Prefetch → NPU → Commit con performance counters.
-//       3. perf_monitor          – Congela y expone los contadores tras commit.
-//       4. JTAG Interface        – Interfaz externa para acceder a registros.
-//
-//   • Flujo de control externamente gobernado por:
-//       – matrices_loaded : flag que indica A/B cargadas en MRAM.
-//       – prefetch_start  : pulso 1-clk para iniciar lectura de A/B.
-//       – commit_start    : pulso 1-clk para iniciar escritura de C.
-//       – use_relu        : flag para habilitar el uso del ReLU.
-//
-//   • Handshake MRAM:
-//       – 16-bit port: re16, mat_sel, addr16 → solicitud; ready16, stall16 → respuesta.
-//       – 32-bit port: we32, addr32, din32 → solicitud; ready32, stall32 → respuesta.
-//
-//   • Estado y señales clave:
-//       – busy            : ‘1’ mientras el NPU está computando.
-//       – done            : pulso 1-clk al completar matriz C.
-//       – result_stored   : pulso 1-clk tras escritura de C en MRAM.
-//       – perf_ready      : pulso 1-clk al completar el snapshot de contadores.
-//
-//   • Parámetros:
-//       – K : dimensión de las matrices (K×K) y profundidad de MAC.
-//       – P : ancho en bits de los contadores de performance.
-//------------------------------------------------------------------------------
+/*
+Test bench for Control Unit module
+Date: 21/06/25
+NY Approved
+*/
+/*
+add wave *
 
+add wave -radix signed /tb_control_unit/memA
+add wave -radix signed /tb_control_unit/memB
+add wave -radix signed /tb_control_unit/memC
+add wave -radix signed /tb_control_unit/a_mat
+add wave -radix signed /tb_control_unit/b_mat
+add wave -radix signed /tb_control_unit/c_mat
+add wave -radix signed /tb_control_unit/pe_mult_count
+add wave -radix signed /tb_control_unit/pe_sum_count
+add wave -radix signed /tb_control_unit/pe_accum_count
+*/
 import pkg_systolic::*;
 
-module system_top #(
-    parameter int K = 4,            // dimensión de matriz (K×K)
-    parameter int P = 32            // cantidad de bits para perf. counters
-)(
-    input  logic clk,
-    input  logic rst,
+module tb_control_unit;
 
-    input  logic tdo,
+    timeunit 1ps;
+    timeprecision 1ps;
 
-    output logic tdi,
+    // Parámetros
+    localparam int K        = 4;    // productos por celda
+    localparam int P        = 32;   // cantidad de bits para perf. counters
+    localparam int CLK_PER  = 100;  // ns -> 100 MHz
+    // localparam int RANGE    = 10;   // rango de valores por usar
 
-    output logic [6:0] sseg_hex1,
-	output logic [6:0] sseg_hex0,
-    output logic rst_led
-);
+    logic clk;
+    logic rst;
 
     //––– Señales de control de flujo –––
-    /* Vendria de un User JTAG Interface */
     logic use_relu_fw;      // habilita el uso del relu                 // [y] from CU to SNC (MtxPref) [y]
 
     //––– Señales de control externas (lectura) –––
-    /* Esta vendrá del UJI luego de revisar que se han cargado las matrices */
-	/* Esta podria dejar de ser 1 cuando se ingresa una nueva matriz C :todo*/
     logic matrices_loaded_fw;  // MRAM ya cargó matrices A/B		    // [y] from CU to SNC (MtxPref) [y]
-	/* Este vendrá de un control unit luego de revisar que la memoria pueda ser leida */
 	logic prefetch_start;   // pulso para arrancar el prefetch	        // [y] from CU to SNC (MtxPref) [y]
-    /* Este vendrá de un control unit luego de revisar que la memoria pueda ser escrita */
 	logic commit_start;     // pulso para arrancar el commit	        // [y] from CU to SNC (MtxComt) [y]
-    /* */
     logic npu_busy;         // NPU esta en media ejecucion			    // [y] from SNC (NPU) to CU [y]
-	/* */
     logic npu_done;         // NPU calculo matriz resultante 			// [y] from SNC (NPU) to CU [y]
-	/* Esta irá al matrix_store_unit para avisar que se ha escrito en MRAM y es posible leer la matriz */
 	logic result_stored;    // commit terminado					        // [y] from SNC (MtxComt) to CU [y]
 
     //––– Arithmetic Op. Performance Counters (via NPU) –––
@@ -278,7 +256,7 @@ module system_top #(
     //--------------------------------------------------------------------------
     control_unit #(
         .P(P)
-    ) cu_inst (
+    ) uut (
         .clk                  (clk),
         .rst                  (rst),
         // External interface
@@ -311,64 +289,125 @@ module system_top #(
         .use_relu_fw          (use_relu_fw)
     );
 
+    // inner wiring MRAM
+    s16_t memA [0:K*K-1];
+    s16_t memB [0:K*K-1];
+    s32_t memC [0:K*K-1];
+    // inner wiring SNC
+    logic [1:0] prefetch_state;
+    s16_t a_mat [0:K-1][0:K-1]; // matriz A
+    s16_t b_mat [0:K-1][0:K-1]; // matriz B
+    logic [1:0] commit_state;
+    s32_t c_mat [0:K-1][0:K-1]; // matriz C resultante
+    // inner wiring CU
+    logic [2:0] state;
+    logic [2:0] next_state;
 
-    //----------------------------------------------------------------------
-    // JTAG lol
-    //----------------------------------------------------------------------
+    // Initialize inputs
+    initial begin
+		$display("\nControl Unit module testbench:\n");
 
-    //--- Señales internas para el JTAG ---
-    logic tck;
-    // logic tdi;
-    logic [7:0] ir_in, ir_out;
-    //logic tdo;
-	//assign rst = ~key0;         // Reset activo en alto
+		clk = 1'b1;
+        rst = 1'b0;
 
-    logic virtual_state_cdr;
-    logic virtual_state_sdr;
-    logic virtual_state_e1dr;
-    logic virtual_state_pdr;
-    logic virtual_state_e2dr;
-    logic virtual_state_udr;
-    logic virtual_state_cir;
-    logic virtual_state_uir;
+        start_exec = 1'b0;
+        stop_exec = 1'b0;
+        use_relu = 1'b0;
+        matrices_loaded = 1'b0;
 
-    // Instancia del módulo sld_virtual_jtag
-    vjtag
-        // .sld_auto_instance_index("YES"),
-        // .sld_instance_index(0),
-        // .sld_ir_width(8),
-        // .sld_sim_action(""),
-        // .sld_sim_n_scan(""),
-        // .sld_sim_total_length(0)
-     jtag_inst (
-        .tck(altera_reserved_tck),
-        .tdi(altera_reserved_tdi),
-        .tdo(altera_reserved_tdo),
-        .ir_in(ir_in),
-        .ir_out(ir_out),
-        .virtual_state_cdr(virtual_state_cdr),
-        .virtual_state_sdr(virtual_state_sdr),
-        .virtual_state_e1dr(virtual_state_e1dr),
-        .virtual_state_pdr(virtual_state_pdr),
-        .virtual_state_e2dr(virtual_state_e2dr),
-        .virtual_state_udr(virtual_state_udr),
-        .virtual_state_cir(virtual_state_cir),
-        .virtual_state_uir(virtual_state_uir)
-    );
+        mram.memA = '{
+            2,  -1,  0,  6,
+            -7,  5,  6,  -4,
+            8,  1,  -2,  3,
+            0,  7,  -9,  1
+        };
+        mram.memB = '{
+            5,  0,  2,  -3,
+            -4,  6,  7,  1,
+            8,  -9,  0,  9,
+            1,  3,  -5,  2
+        };
+    end
+
+    // Clock
+    always #(CLK_PER/2) begin
+        clk = ~clk;
+
+        memA = mram.memA;
+        memB = mram.memB;
+        memC = mram.memC;
+
+        prefetch_state = SNC.prefetcher.state;
+        commit_state = SNC.committer.state;
+
+        a_mat = SNC.a_mat;
+        b_mat = SNC.b_mat;
+        c_mat = SNC.c_mat;
+
+        state = uut.state;
+        next_state = uut.next_state;
+    end
+
+    // Variables de referencia
+
+    initial	begin
+
+        repeat (1) @(posedge clk);
+        
+        rst = 1;
+
+        @(posedge clk);
+
+        rst = 0;
+
+        @(posedge clk);
+
+        use_relu = 1'b0;
+
+        @(posedge clk);
+
+        start_exec = 1'b1;
+
+        @(posedge clk);
+
+        matrices_loaded = 1'b1;
+        start_exec = 1'b0;
+
+        @(posedge clk);
 
 
-    //----------------------------------------------------------------------
-    // FPGA Display
-    //----------------------------------------------------------------------
+        // --- espera a que el NPU active el busy ---
+        wait(npu_busy);
 
-    // Instancia del módulo que muestra el valor de TDI en HEX0 y HEX1
-    sseg_display tdi_disp_inst (
-        .tdi(tdi),
-        .HEX0(sseg_hex1),
-        .HEX1(sseg_hex0)
-    );
+        $display("[%0t] a_mat = %0p \nb_mat = %0p",
+                 $time, a_mat, b_mat);
 
-    // Led para verificar el reset
-    assign rst_led = ~rst;
+        matrices_loaded = 1'b0;
+	
+
+        // --- espera a que el NPU active el ready ---
+        wait(npu_done);
+
+        $display("[%0t] c_mat = %0p",
+                 $time, c_mat); 
+
+
+        // --- espera a que se termine de escribir en MRAM ---
+        wait(exec_done);
+
+        $display("[%0t] memC = %0p",
+                 $time, memC); 
+        
+
+        @(posedge clk);
+
+        stop_exec = 1'b1;
+
+		// Done
+
+    end
+
+    initial
+	#18000 $finish;    
 
 endmodule

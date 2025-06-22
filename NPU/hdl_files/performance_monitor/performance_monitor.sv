@@ -9,12 +9,12 @@
 //   • Genera counters_ready (pulso 1-clk) indicando que el snapshot es válido.
 //
 //   Parámetros:
-//     K : tamaño de la malla (número de PEs por fila/columna).
-//     P : ancho en bits de los performance counters.
+//       K : tamaño de la malla (número de PEs por fila/columna).
+//       P : ancho en bits de los performance counters.
 //
 //   Puertos:
-//     clk, rst         : reloj y reset síncrono.
-//     commit_done      : pulso al completar la escritura de C en MRAM.
+//       clk, rst        : reloj y reset síncrono.
+//       commit_done     : pulso al completar la escritura de C en MRAM.
 //     // Contadores de MRAM
 //       read16_count, write16_count, read32_count, write32_count,
 //       bits_read_16_count, bits_written_16_count,
@@ -27,7 +27,7 @@
 //       pe_accum_count [0:K-1][0:K-1]
 //     // Salidas “snapshot”
 //       snap_...        : mismo ancho y tamaño que las señales de entrada.
-//     counters_ready       : pulso 1-clk tras capturar snapshot.
+//       counters_ready  : pulso 1-clk tras capturar snapshot.
 //------------------------------------------------------------------------------
 `timescale 1ns/1ps
 
