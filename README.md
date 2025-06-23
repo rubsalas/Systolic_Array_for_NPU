@@ -62,3 +62,17 @@ Introducir la cantidad de filas y columnas que se desean en las matrices A y B.
 Introducir la cantidad de PEs con los que se desea ejecutar el sistema.
 
 Los resultados pueden ser observados en consola.
+
+Para la ejecución del JTAG deben hacerse cd a la carpeta JTAG/jtag_server una vez cargado el proyecto del jtag a la FPGA
+
+Para ejecutar el servidor se debe correr el siguiente comando
+
+quartus_stp -t jtag_server.tcl
+
+En caso de que no sea posible ejecutarlo de esta manera, se debe ejecutar con el siguiente comando, modificando la ruta completa por el path donde este guardado el archivo
+
+quartus_stp -t rutaCompletaDelArchivo/jtag_server.tcl
+
+Para ejecutar el cliente en python se debe ejecutar el comando
+
+python3 client.py

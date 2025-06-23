@@ -1,0 +1,37 @@
+{
+	"partitions" : [
+		{
+			"name" : "Top",
+			"pins" : [
+				{
+					"name" : "virtual_state_cdr",
+					"strict" : false
+				},
+				{
+					"name" : "virtual_state_sdr",
+					"strict" : false
+				},
+				{
+					"name" : "virtual_state_e1dr",
+					"strict" : false
+				},
+				{
+					"name" : "virtual_state_pdr",
+					"strict" : false
+				},
+				{
+					"name" : "virtual_state_e2dr",
+					"strict" : false
+				},
+				{
+					"name" : "virtual_state_udr",
+					"strict" : false
+				},
+				{
+					"name" : "virtual_state_uir",
+					"strict" : false
+				}
+			]
+		}
+	]
+}
