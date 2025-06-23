@@ -13,6 +13,7 @@ module tb_accumulator;
     // Parámetros
     localparam int K        = 4;   // productos por celda
     localparam int CLK_PER  = 100;  // ns -> 100 MHz
+    localparam int RANGE    = 10;   // rango de valores por usar
 
     logic clk;
     logic rst;
@@ -59,7 +60,7 @@ module tb_accumulator;
     end
             
     // Variables de referencia
-    s32_t exp_sum;
+    s32_t exp_sum = 0;
     int   err_cnt = 0;
     int   seed    = 17;
 
@@ -80,47 +81,57 @@ module tb_accumulator;
 
         // Suma 1/4
 		valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000; 
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
-	 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
+
         @(posedge clk);
 
         // Suma 2/4
         valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000;
+        prod_in  = $urandom_range(RANGE * 2) - RANGE;
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
         // Suma 3/4
         valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000; 
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
         // Suma 4/4
         valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000; 
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
-        // Waiting for op
+        wait(last_prod);
+
         valid_in = 0;
-        prod_in  = $urandom_range(2000) - 1000; 
+
+        if (acc_out !== exp_sum) begin
+            $fatal("ERROR: exp_sum = %0d no es igual a acc_out = %0d", exp_sum, acc_out);
+        end
+
+        @(posedge clk);
+
+
+        // Waiting for op
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum = 0;
 
         $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
@@ -130,7 +141,7 @@ module tb_accumulator;
 
         // Suma 1/4
 		valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000; 
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
         $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
@@ -140,7 +151,7 @@ module tb_accumulator;
 
         // Suma 2/4
         valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000;
+        prod_in  = $urandom_range(RANGE * 2) - RANGE;
         exp_sum += prod_in;
 
         $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
@@ -150,7 +161,7 @@ module tb_accumulator;
 
         // Suma 3/4
         valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000; 
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
         $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
@@ -160,7 +171,7 @@ module tb_accumulator;
 
         // Suma 4/4
         valid_in = 1;
-        prod_in  = $urandom_range(2000) - 1000; 
+        prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
         $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
@@ -168,11 +179,24 @@ module tb_accumulator;
 	 
         @(posedge clk);
 
+        wait(last_prod);
+
+        valid_in = 0;
+
+        if (acc_out !== exp_sum) begin
+            $fatal("ERROR: exp_sum = %0d no es igual a acc_out = %0d", exp_sum, acc_out);
+        end
+
+        @(posedge clk);
+
+        $display(">>> Los tests PASARON correctamente.");
+		#10 $finish;
+
 		// Done
 
     end
 
     initial
-	#2000 $finish;                                 
+	#3000 $finish;                                 
 
 endmodule

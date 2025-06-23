@@ -57,7 +57,10 @@ set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
-set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb_system_top -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH tb_accumulator -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_accumulator -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_accumulator
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_accumulator -section_id tb_accumulator
 set_global_assignment -name EDA_TEST_BENCH_NAME tb_pe -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_pe
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_pe -section_id tb_pe
@@ -153,6 +156,12 @@ set_global_assignment -name EDA_TEST_BENCH_NAME tb_user_jtag_interface -section_
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_user_jtag_interface
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_user_jtag_interface -section_id tb_user_jtag_interface
 set_global_assignment -name SYSTEMVERILOG_FILE hdl_files/tb/tb_system_top.sv
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_system_top -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_system_top
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_system_top -section_id tb_system_top
+set_global_assignment -name EDA_TEST_BENCH_NAME tb_accumulator_auto -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_accumulator_auto
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_accumulator_auto -section_id tb_accumulator_auto
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_pe.sv -section_id tb_pe
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/tb/tb_systolic_array.sv -section_id tb_systolic_array
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/control_unit/tb/tb_control_unit.sv -section_id tb_control_unit
@@ -160,8 +169,7 @@ set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/N
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/memory/tb/tb_mram.sv -section_id tb_mram
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/tb/tb_systolic_neural_core.sv -section_id tb_systolic_neural_core
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/user_jtag_interface/tb/tb_user_jtag_interface.sv -section_id tb_user_jtag_interface
-set_global_assignment -name EDA_TEST_BENCH_NAME tb_system_top -section_id eda_simulation
-set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_system_top
-set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_system_top -section_id tb_system_top
 set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/tb/tb_system_top.sv -section_id tb_system_top
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_accumulator_auto.sv -section_id tb_accumulator_auto
+set_global_assignment -name EDA_TEST_BENCH_FILE hdl_files/systolic_neural_core/NPU/systolic_array/pe/tb/tb_accumulator.sv -section_id tb_accumulator
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
