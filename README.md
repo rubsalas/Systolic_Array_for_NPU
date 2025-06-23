@@ -2,7 +2,23 @@
 
 Este es el segundo proyecto del curso CE-4302 Arquitectura de Computadores II del Programa de Licenciatura en Ingeniería en Computadores del Instituto Tecnológico de Costa Rica para el Semestre I 2025. Se diseñará e implementará un arreglo sistólico para una Unidad de Procesamiento Neural (NPU).
 
-## Modelo de Referencia
+## Top Level Reference Model
+
+Para la ejecución del programa de referencia de C++ se debe hacer cd hasta la carpeta Top_Level/src.
+
+Compilar el programa utilizando el siguiente comando:
+
+g++ main.cpp Systolic_Array.cpp -o systolic_array -pthread
+
+Para ejecutar el programa:
+
+./systolic_array
+
+Introducir la cantidad de filas y columnas que se desean en las matrices A y B.
+
+Introducir la cantidad de PEs con los que se desea ejecutar el sistema.
+
+Los resultados pueden ser observados en consola.
 
 ## Proyecto Quartus
 
@@ -45,34 +61,17 @@ Usando la herramienta de Modelsim se procederá a configurar la simulación de l
 2. Conectar la FPGA y darle click en “Start”.
 
 ## JTAG
-Top Level reference model
 
-Para ejecución del programa dereferencia de C++ se debe hacer cd hasta la carpeta Top_Level/src
+Para la ejecución del JTAG deben hacerse cd a la carpeta JTAG/jtag_server, una vez cargado el proyecto del jtag a la FPGA.
 
-Compilar el programa utilizando el comando
-
-g++ main.cpp Systolic_Array.cpp -o systolic_array -pthread
-
-Ejecutar el programa 
-
-./systolic_array
-
-Introducir la cantidad de filas y columnas que se desean en las matrices A y B.
-
-Introducir la cantidad de PEs con los que se desea ejecutar el sistema.
-
-Los resultados pueden ser observados en consola.
-
-Para la ejecución del JTAG deben hacerse cd a la carpeta JTAG/jtag_server una vez cargado el proyecto del jtag a la FPGA
-
-Para ejecutar el servidor se debe correr el siguiente comando
+Para ejecutar el servidor se debe correr el siguiente comando:
 
 quartus_stp -t jtag_server.tcl
 
-En caso de que no sea posible ejecutarlo de esta manera, se debe ejecutar con el siguiente comando, modificando la ruta completa por el path donde este guardado el archivo
+En caso de que no sea posible ejecutarlo de esta manera, se debe ejecutar con el siguiente comando, modificando la ruta completa por el path donde este guardado el archivo:
 
 quartus_stp -t rutaCompletaDelArchivo/jtag_server.tcl
 
-Para ejecutar el cliente en python se debe ejecutar el comando
+Para ejecutar el cliente en python se debe ejecutar el comando:
 
 python3 client.py
