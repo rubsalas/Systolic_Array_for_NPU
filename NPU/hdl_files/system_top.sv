@@ -27,7 +27,7 @@
 //       – K : dimensión de las matrices (K×K) y profundidad de MAC.
 //       – P : ancho en bits de los contadores de performance.
 //------------------------------------------------------------------------------
-
+`timescale 1ns/1ps
 import pkg_systolic::*;
 
 module system_top #(
@@ -37,9 +37,15 @@ module system_top #(
     input  logic clk,
     input  logic rst,
 
-    input  logic tdo,
-
-    output logic tdi,
+    input  logic [3:0] cmd_in,
+    input  logic       use_relu_in,
+    input  logic       use_stepping_in,
+    input  logic       mat_sel_in,
+    input  logic       address_in,
+    input  s16_t       din16_in,
+    input  logic       perf_sel_in,
+    // Command strobe
+    input  logic       confirm_uji,
 
     output logic [6:0] sseg_hex1,
 	output logic [6:0] sseg_hex0,
@@ -266,10 +272,12 @@ module system_top #(
     );
 
     // Control Unit signals
-    logic start_exec;           // Start command from host          // [n] from UJI to CU [y]
-    logic stop_exec;            // Clear done & go to IDLE          // [n] from UJI to CU [y]
-    logic use_relu;             // habilita el uso del relu         // [n] from UJI to CU [y]
-    logic matrices_loaded;      // MRAM ya cargó matrices A/B	    // [n] from UJI to CU [y]
+    logic start_exec;           // Start command from host          // [y] from UJI to CU [y]
+    logic stop_exec;            // Clear done & go to IDLE          // [y] from UJI to CU [y]
+    logic use_relu;             // habilita el uso del relu         // [y] from UJI to CU [y]
+    logic matrices_loaded;      // MRAM ya cargó matrices A/B	    // [y] from UJI to CU [y]
+    logic use_stepping;         // habilita el uso de stepping      // [y] from UJI to CU [n]
+
     logic exec_active;          // High during execution            // [y] from CU to UJI [n]
     logic exec_done;            // High when cycle completes        // [y] from CU to UJI [n]
     
@@ -309,6 +317,32 @@ module system_top #(
         .result_stored_fw     (result_stored_fw),
         // Forwarding Flow Control
         .use_relu_fw          (use_relu_fw)
+    );
+
+    //--------------------------------------------------------------------------
+    // Instancia de User JTAG Interface
+    //--------------------------------------------------------------------------
+    user_jtag_interface #(
+        .K(K)
+    ) UJI (
+        .clk               (clk),
+        .rst               (rst),
+
+        .cmd_in            (cmd_in),
+        .use_relu_in       (use_relu_in),
+        .use_stepping_in   (use_stepping_in),
+        .mat_sel           (mat_sel_in),
+        .address           (address_in),
+        .din16             (din16_in),
+        .perf_sel          (perf_sel_in),
+
+        .confirm           (confirm_uji),
+
+        .use_relu_out      (use_relu),
+        .use_stepping_out  (use_stepping),
+        .start_exec        (start_exec),
+        .matrices_loaded   (matrices_loaded),
+        .stop_exec         (stop_exec)
     );
 
 

@@ -1,7 +1,7 @@
 /*
 Test bench for Control Unit module
 Date: 21/06/25
-NY Approved
+Approved
 */
 /*
 add wave *
