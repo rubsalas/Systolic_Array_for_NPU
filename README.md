@@ -45,3 +45,20 @@ Usando la herramienta de Modelsim se procederá a configurar la simulación de l
 2. Conectar la FPGA y darle click en “Start”.
 
 ## JTAG
+Top Level reference model
+
+Para ejecución del programa dereferencia de C++ se debe hacer cd hasta la carpeta Top_Level/src
+
+Compilar el programa utilizando el comando
+
+g++ main.cpp Systolic_Array.cpp -o systolic_array -pthread
+
+Ejecutar el programa 
+
+./systolic_array
+
+Introducir la cantidad de filas y columnas que se desean en las matrices A y B.
+
+Introducir la cantidad de PEs con los que se desea ejecutar el sistema.
+
+Los resultados pueden ser observados en consola.
