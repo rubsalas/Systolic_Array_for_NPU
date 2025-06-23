@@ -1,7 +1,7 @@
 /*
 Test bench for User JTAG Interface module
 Date: 22/06/24
-NY Approved
+Approved pero a falta de commands
 */
 import pkg_systolic::*;
 
@@ -159,7 +159,7 @@ module tb_user_jtag_interface;
 
         use_stepping_in = 1'b0;
 
-        /* wRITE */
+        /* Write */
         @(posedge clk);
 
         cmd_in = 4'd3;

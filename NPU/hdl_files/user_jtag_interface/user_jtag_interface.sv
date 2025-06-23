@@ -1,6 +1,34 @@
+//------------------------------------------------------------------------------
+// user_jtag_interface.sv – Interfaz JTAG de usuario para Control Unit
+// 
+// Descripción:
+//   Este módulo interpreta comandos de 4 bits (`cmd_in`) y un pulso de
+//   confirmación (`confirm` flanco 1→0) para actualizar registros persistentes
+//   de control que alimentan al Control Unit:
+//     • use_relu        – configuración de activación de ReLU
+//     • start_exec      – pulso de inicio de ejecución
+//     • matrices_loaded – bandera de matrices cargadas
+//     • stop_exec       – pulso de parada de ejecución
+//   Además, la FSM dispone de estados adicionales (SET_STEPPING, WRITE, STEP,
+//   READ, PERF_COUNTER, RESET, DONE) listos para futuras ampliaciones.
 //
-//
-//
+// Puertos:
+//   clk              : Reloj de sistema, sincroniza la FSM            (in)
+//   rst              : Reset síncrono activo en alto                  (in)
+//   cmd_in[3:0]      : Código de comando para seleccionar acción      (in)
+//   use_relu_in      : Valor de ReLU a almacenar en SET_RELU          (in)
+//   use_stepping_in  : Valor de stepping a almacenar en SET_STEPPING  (in)
+//   mat_sel          : Selector de matriz para comando WRITE          (in, reservado)
+//   address          : Dirección para acceso de memoria (WRITE/READ)  (in, reservado)
+//   din16            : Dato de 16 bits para WRITE                     (in, reservado)
+//   perf_sel         : Selector de contador para lectura de perf.     (in, reservado)
+//   confirm          : Pulso de confirmación (1→0) para ejecutar cmd  (in)
+//   use_relu         : Señal persistente de activación ReLU           (out)
+//   start_exec       : Pulso de 1 ciclo para iniciar ejecución        (out)
+//   matrices_loaded  : Señal persistente de matrices cargadas         (out)
+//   stop_exec        : Pulso de 1 ciclo para detener ejecución        (out)
+//------------------------------------------------------------------------------
+
 `timescale 1ns/1ps
 import pkg_systolic::*;
 

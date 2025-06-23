@@ -1,31 +1,67 @@
 //------------------------------------------------------------------------------
-// system_top.sv  –  Top-level integration of MRAM, Systolic Neural Core and Perf Monitor
+// system_top.sv  – Top-level integration of Systolic Neural Processing System
 //
-//   • Integra los siguientes bloques:
-//       1. MRAM                  – Memoria dual-port para A/B (16-bit) y C (32-bit).
-//       2. systolic_neural_core  – Prefetch → NPU → Commit con performance counters.
-//       3. perf_monitor          – Congela y expone los contadores tras commit.
-//       4. JTAG Interface        – Interfaz externa para acceder a registros.
+// Descripción:
+//   Este módulo de nivel superior agrupa e interconecta todos los bloques
+//   esenciales del sistema de procesamiento neuronal basado en malla sistólica:
+//     • MRAM            : Memoria dual-port para matrices A/B (16-bit) y C (32-bit).
+//     • systolic_neural_core : Prefetch → Compute → Commit con contadores de performance.
+//     • perf_monitor    : Congela y toma snapshot de contadores tras el commit.
+//     • control_unit    : FSM que orquesta señales de control (use_relu, start_exec,
+//                         matrices_loaded, stop_exec, etc.).
+//     • user_jtag_interface : Interfaz estilo JTAG para enviar comandos de prueba
+//                             y configurar señales de control desde un “host”.
+//     • vjtag           : Instancia de JTAG real para Quartus.
 //
-//   • Flujo de control externamente gobernado por:
-//       – matrices_loaded : flag que indica A/B cargadas en MRAM.
-//       – prefetch_start  : pulso 1-clk para iniciar lectura de A/B.
-//       – commit_start    : pulso 1-clk para iniciar escritura de C.
-//       – use_relu        : flag para habilitar el uso del ReLU.
+//   El flujo típico de ejecución es:
+//     1. user_jtag_interface → control_unit: recibe `matrices_loaded`, `use_relu`, etc.
+//     2. control_unit → systolic_neural_core: emite `prefetch_start` y, tras cómputo,
+//        `commit_start`.
+//     3. systolic_neural_core → MRAM/MatrixCommit: realiza lecturas de A/B y escritura de C.
+//     4. perf_monitor: recopila contadores de memoria y operación aritmética,
+//        expone `counters_ready` tras snapshot.
+//     5. control_unit ↔ host (UJI): señales `exec_active` y `exec_done` para secuenciar
+//        múltiples ejecuciones.
 //
-//   • Handshake MRAM:
-//       – 16-bit port: re16, mat_sel, addr16 → solicitud; ready16, stall16 → respuesta.
-//       – 32-bit port: we32, addr32, din32 → solicitud; ready32, stall32 → respuesta.
+// Parámetros:
+//   parameter int K : dimensión de las matrices (K×K) y profundidad de MAC.
+//   parameter int P : ancho en bits de los contadores de performance.
 //
-//   • Estado y señales clave:
-//       – busy            : ‘1’ mientras el NPU está computando.
-//       – done            : pulso 1-clk al completar matriz C.
-//       – result_stored   : pulso 1-clk tras escritura de C en MRAM.
-//       – perf_ready      : pulso 1-clk al completar el snapshot de contadores.
+// Puertos:
+//   // Reloj y reset
+//   input  logic           clk,           // Reloj de sistema
+//   input  logic           rst,           // Reset síncrono, activo en alto
 //
-//   • Parámetros:
-//       – K : dimensión de las matrices (K×K) y profundidad de MAC.
-//       – P : ancho en bits de los contadores de performance.
+//   // Interfaz de comandos JTAG-like (user_jtag_interface)
+//   input  logic [3:0]     cmd_in,        // Código de comando SET/WRITE/START/etc.
+//   input  logic           use_relu_in,   // Valor para SET_RELU
+//   input  logic           use_stepping_in,// Valor para SET_STEPPING
+//   input  logic           mat_sel_in,    // Selector A/B para accesos directos
+//   input  logic [$clog2(K*K)-1:0] address_in, // Dirección 0…K*K-1
+//   input  s16_t           din16_in,      // Dato 16-bit para MRAM
+//   input  logic           perf_sel_in,   // Selector de contador para lectura
+//   input  logic           confirm_uji,   // Pulso de confirmación (1→0) de comando
+//
+//   // Salidas de display (no usadas en esta fase)
+//   output logic [6:0]     sseg_hex1,     // Display segmentos hex1
+//   output logic [6:0]     sseg_hex0,     // Display segmentos hex0
+//   output logic           rst_led,       // LED de reset (activo alto)
+//
+//   // Señales internas de control (forwarding)
+//   logic use_relu_fw,         // from CU → SNC   (Enable ReLU in SNC)
+//   logic matrices_loaded_fw,  // from CU → SNC   (Enable prefetch gating)
+//   logic prefetch_start,      // from CU → SNC   (1-clk pulse to prefetch A/B)
+//   logic commit_start,        // from CU → SNC   (1-clk pulse to commit C)
+//   logic result_stored_fw,    // from CU → PM    (Indica commit completo)
+//   logic counters_ready,      // from PM → CU    (Snapshot completo)
+//   logic exec_active,         // from CU → UJI   (Ejecución en curso)
+//   logic exec_done,           // from CU → UJI   (Ejecución finalizada)
+//
+//   // Señales de estado real del SNC/MRAM
+//   logic npu_busy,            // from SNC → CU   (NPU ocupado computing)
+//   logic npu_done,            // from SNC → CU   (Compute complete on C matrix)
+//   logic result_stored,       // from MtxComt → CU (C almacenada en MRAM)
+//   // … además de contadores de performance internos y accesos a MRAM …
 //------------------------------------------------------------------------------
 `timescale 1ns/1ps
 import pkg_systolic::*;
