@@ -134,8 +134,8 @@ module tb_accumulator;
         prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum = 0;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
@@ -144,8 +144,8 @@ module tb_accumulator;
         prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
@@ -154,8 +154,8 @@ module tb_accumulator;
         prod_in  = $urandom_range(RANGE * 2) - RANGE;
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
@@ -164,8 +164,8 @@ module tb_accumulator;
         prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum);  
 	 
         @(posedge clk);
 
@@ -174,12 +174,15 @@ module tb_accumulator;
         prod_in  = $urandom_range(RANGE * 2) - RANGE; 
         exp_sum += prod_in;
 
-        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d",
-                 $time, k_cnt, prod_in, acc_out, res_ready); 
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 	 
         @(posedge clk);
 
         wait(last_prod);
+
+        $display("[%0t] k=%0d prod=%0d acc_now=%0d res_ready=%0d exp_sum=%0d",
+                 $time, k_cnt, prod_in, acc_out, res_ready, exp_sum); 
 
         valid_in = 0;
 
